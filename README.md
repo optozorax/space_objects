@@ -55,7 +55,48 @@
 
 # Использование
 
+## Используем преобразование координат для рисования графика синуса
+
+```c++
+#include <cmath>
+#include <spob/spob.h>
+
+using namespace spob;
+void draw_line(vec2 a, vec2 b); // Некая сторонняя функция, которая рисует линию из точки a в точку b
+
+void draw_sin(const space2& tr) {
+	// Рисуем оси координат
+	draw_line(tr.from(vec2(-1, 0)), tr.from(vec2(1, 0)));
+	draw_line(tr.from(vec2(0, -1)), tr.from(vec2(0, 1)));
+
+	// Рисуем график функции sin(x) в пределах [-2, 2]
+	vec2 last(-2, std::sin(-2));
+	for (double x = -2; x <= 2; x += 0.01) {
+		vec2 current(x, std::sin(x));
+		draw_line(tr.from(last), tr.from(current));
+		last = current;
+	}
+}
+
+int main() {
+	space2 tr = getStandardCrd2();
+	tr.pos = vec2(150, 150); // Смещаем в центр экрана
+	tr.j.negate(); // Делается это потому что на экране ось Y направлена вниз
+	tr.i *= 60; // Увеличиваем ось X в 60 раз
+	tr.j *= 60;
+
+	draw_sin(tr);
+}
+```
+
+Полный код программы находится по адресу: `doc/coordinates_transformation.cpp`.
+
+Результат:
+
+![doc/coordinates_transformation.png](doc/coordinates_transformation.png)
+
 ## Рисуем стрелки
+
 ```c++
 #include <cmath>
 #include <spob/spob.h>
@@ -107,6 +148,49 @@ int main() {
 
 ![doc/arrow.png](doc/arrow.png)
 
+## Рисуем радиально симметричные изображения
+
+```c++
+#include <cmath>
+#include <spob/spob.h>
+
+using namespace spob;
+void draw_line(vec2 a, vec2 b); // Некая сторонняя функция, которая рисует линию из точки a в точку b
+
+void draw_anything(const space2& tr) {
+	vec2 a(-1, -1), b(-1, 1), c(1, 1), d(1, -1);
+
+	draw_line(tr.from(a), tr.from(b));
+	draw_line(tr.from(b), tr.from(c));
+	draw_line(tr.from(c), tr.from(d));
+	draw_line(tr.from(d), tr.from(a));
+
+	draw_line(tr.from(a), tr.from(c));
+}
+
+int main() {
+	vec2 center(150, 150);
+
+	space2 tr = getStandardCrd2();
+	tr.pos = center + vec2(130, 0);
+	tr.j.negate();
+	tr.i *= 15;
+	tr.j *= 15;
+
+	int count = 4 + 2 * 4;
+	for (int i = 0; i < count; ++i) {
+		double angle = i * 2.0 * M_PI / double(count);
+		draw_anything(rotate(tr, center, angle));
+	}
+}
+```
+
+Полный код программы находится по адресу: `doc/symmetry.cpp`.
+
+Результат: 
+
+![doc/symmetry.png](doc/symmetry.png)
+
 ## Рисуем дерево Пифагора
 
 ```c++
@@ -152,6 +236,7 @@ int main() {
 ![doc/pythagoras_tree.png](doc/pythagoras_tree.png)
 
 ## Рисуем проекцию трехмерного куба на экран
+
 ```c++
 #include <cmath>
 #include <spob/spob.h>
@@ -245,6 +330,8 @@ int main() {
 	draw_3D_cube(logic_to_img);
 }
 ```
+
+Полный код программы находится по адресу: `doc/3D_cube_perspective.cpp`.
 
 Результат:
 
