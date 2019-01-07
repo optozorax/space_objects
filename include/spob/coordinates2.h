@@ -53,6 +53,9 @@ namespace spob
 		crd2 from(const crd2& crd) const;
 	};
 
+	// crd.to() == invert(crd).from()
+	crd2 invert(const crd2& crd);
+
 	//-------------------------------------------------------------------------
 	class line2 : public crd2
 	{

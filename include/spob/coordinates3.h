@@ -56,6 +56,9 @@ namespace spob
 		crd3 from(const crd3& crd) const;
 	};
 
+	// crd.to() == invert(crd).from()
+	crd3 invert(const crd3& crd);
+
 	//---------------------------------------------------------------------
 	class plane3 : public crd3
 	{
