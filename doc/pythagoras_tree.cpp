@@ -16,10 +16,7 @@ void draw_pythagoras_tree(const space2& space) {
 	if (space.i.length() < 2)
 		return;
 
-	vec2 a(0, 0);
-	vec2 b(0, 1);
-	vec2 c(1, 1);
-	vec2 d(1, 0);
+	vec2 a(0, 0), b(0, 1), c(1, 1), d(1, 0);
 
 	// Рисуем квадрат
 	draw_line(space.from(a), space.from(b));
