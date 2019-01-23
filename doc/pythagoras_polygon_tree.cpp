@@ -16,8 +16,6 @@ void draw_pythagoras_tree(const space2& space) {
 	if (space.i.length() < 2)
 		return;
 
-	vec2 a(0, 0), b(0, 1), c(1, 1), d(1, 0);
-
 	// Считаем правильный многоугольник
 	const int n = 5;
 	const int m = 1;
@@ -29,7 +27,7 @@ void draw_pythagoras_tree(const space2& space) {
 
 	// Преобразуем координаты так, чтобы он своим первым ребром находится на оси X
 	space2 poly_line = makeLine2(poly[0], poly[1]);
-	for (auto& i : poly) i = poly_line.to(i);
+	poly = toMas(poly_line, poly);
 
 	for (int i = 0; i < poly.size() - 1; i++)
 		draw_line(space.from(poly[i]), space.from(poly[i+1]));
@@ -37,18 +35,21 @@ void draw_pythagoras_tree(const space2& space) {
 
 	// Строим прямогоульный треугольник, который лежит своей гипотенузой на оси OX, с углом alpha
 	double alpha = 45.0 / 180.0 * M_PI;
-	vec2 triangle_a = vec2(0), triangle_b = vec2(1, 0);
-	vec2 triangle_c = rotate(vec2(cos(alpha), 0), vec2(0), alpha);
+	std::vector<vec2> triangle = {
+		vec2(0), 
+		vec2(1, 0), 
+		rotate(vec2(cos(alpha), 0), vec2(0), alpha)
+	};
 
 	// Преобразуем координаты треугольника к координатам m-й стороны многоугольника
 	space2 triangle_line = makeLine2((m == n) ? poly[0] : poly[m+1], poly[m]);
-	triangle_a = triangle_line.from(triangle_a);
-	triangle_b = triangle_line.from(triangle_b);
-	triangle_c = triangle_line.from(triangle_c);
+	triangle = fromMas(triangle_line, triangle);
 
 	// Рекурсивно рисуем дерево для каждой стороны этого треугольника на дереве пифагора
-	draw_pythagoras_tree(makeLine2(space.from(triangle_a), space.from(triangle_c)));
-	draw_pythagoras_tree(makeLine2(space.from(triangle_c), space.from(triangle_b)));
+	space2 l1 = makeLine2(triangle[0], triangle[2]);
+	space2 l2 = makeLine2(triangle[2], triangle[1]);
+	draw_pythagoras_tree(space.from(l1));
+	draw_pythagoras_tree(space.from(l2));
 }
 
 int main() {

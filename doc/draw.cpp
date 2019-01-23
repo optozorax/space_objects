@@ -90,7 +90,7 @@ void Image::draw_dashed_line(const vec2& a, const vec2& b, double size, double s
 void Image::draw_crd(const crd2& crd) {
 	Color current_clr = clr;
 	double arrow_size = std::max(crd.i.length(), crd.j.length()) * 0.1;
-	double arrow_angle = deg2rad(30);
+	double arrow_angle = spob::deg2rad(30);
 	set_pen(thick, Red);
 	draw_arrow(crd.pos, crd.pos + crd.i, arrow_angle, arrow_size);
 	set_pen(thick, Blue);
@@ -130,7 +130,7 @@ void Image::draw_line2(const line2& line) {
 	double current_thick = thick;
 	Color current_clr = clr;
 	double arrow_size = std::max(line.i.length(), line.j.length()) * 0.1;
-	double arrow_angle = deg2rad(30);
+	double arrow_angle = spob::deg2rad(30);
 
 	set_pen(current_thick/1.5, setAlpha(Gray, 128));
 	draw_inf_line(line);
