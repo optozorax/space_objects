@@ -12,7 +12,7 @@ void draw_line(vec2 a, vec2 b) { // Некая сторонняя функция
 }
 
 void draw_pythagoras_tree(const space2& space) {
-	// Выходим из рекурсии, если одна из осей имеет длину меньше, чем 2. Это означает, что сейчас будет рисоваться квадрат с длиной стороны меньше, чем 2.
+	// Выходим из рекурсии, если одна из осей (аналогично и сторона квадрата) имеет длину меньше, чем 2
 	if (space.i.length() < 2)
 		return;
 
@@ -20,8 +20,8 @@ void draw_pythagoras_tree(const space2& space) {
 	const int n = 5;
 	const int m = 1;
 	std::vector<vec2> poly;
-	for (int i = 0; i < n; ++i) {
-		double angle = 2.0 * M_PI/n * i;
+	for (int i = 0; i < n+1; ++i) {
+		double angle = spob::deg2rad(360.0/n * i);
 		poly.push_back(vec2(cos(angle), sin(angle)));
 	}
 
@@ -29,27 +29,34 @@ void draw_pythagoras_tree(const space2& space) {
 	space2 poly_line = makeLine2(poly[0], poly[1]);
 	poly = toMas(poly_line, poly);
 
-	for (int i = 0; i < poly.size() - 1; i++)
-		draw_line(space.from(poly[i]), space.from(poly[i+1]));
-	draw_line(space.from(poly.back()), space.from(poly.front()));
-
-	// Строим прямогоульный треугольник, который лежит своей гипотенузой на оси OX, с углом alpha
-	double alpha = 45.0 / 180.0 * M_PI;
+	// Высчитываем координаты прямоугольного треугольника, который лежит своей гипотенузой на оси X, с углом alpha при основании
+	double alpha = spob::deg2rad(45);
 	std::vector<vec2> triangle = {
-		vec2(0), 
+		vec2(0, 0), 
 		vec2(1, 0), 
 		rotate(vec2(cos(alpha), 0), vec2(0), alpha)
 	};
 
-	// Преобразуем координаты треугольника к координатам m-й стороны многоугольника
-	space2 triangle_line = makeLine2((m == n) ? poly[0] : poly[m+1], poly[m]);
-	triangle = fromMas(triangle_line, triangle);
+	// Преобразуем многоугольник из текущих координат к координатам переданного пространства
+	poly = fromMas(space, poly);
 
-	// Рекурсивно рисуем дерево для каждой стороны этого треугольника на дереве пифагора
+	// Рисуем многоугольник
+	for (int i = 0; i < poly.size() - 1; i++)
+		draw_line(poly[i], poly[i+1]);
+	
+	// Строим пространство, которая находится на m-й стороне многоугольника
+	space2 tr_line = makeLine2(poly[m+1], poly[m]);
+
+	// Переводим координаты треугольника к этому пространству
+	triangle = fromMas(tr_line, triangle);
+
+	// Строим пространства, которые находятся на обоих катетах этого треугольника
 	space2 l1 = makeLine2(triangle[0], triangle[2]);
 	space2 l2 = makeLine2(triangle[2], triangle[1]);
-	draw_pythagoras_tree(space.from(l1));
-	draw_pythagoras_tree(space.from(l2));
+
+	// Рекурсивно строим дерево в этих пространствах
+	draw_pythagoras_tree(l1);
+	draw_pythagoras_tree(l2);
 }
 
 int main() {

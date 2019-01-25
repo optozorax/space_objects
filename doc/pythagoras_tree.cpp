@@ -6,38 +6,52 @@
 using namespace twg;
 
 using namespace spob;
+
 ImageDrawing_aa img(Point_i(700, 420));
 void draw_line(vec2 a, vec2 b) { // Некая сторонняя функция, которая рисует линию из точки a в точку b
 	img.drawLine(a + vec2(0.5, 0.5), b + vec2(0.5, 0.5));
 }
 
 void draw_pythagoras_tree(const space2& space) {
-	// Выходим из рекурсии, если одна из осей имеет длину меньше, чем 2. Это означает, что сейчас будет рисоваться квадрат с длиной стороны меньше, чем 2.
+	// Выходим из рекурсии, если одна из осей (аналогично и сторона квадрата) имеет длину меньше, чем 2
 	if (space.i.length() < 2)
 		return;
 
-	vec2 a(0, 0), b(0, 1), c(1, 1), d(1, 0);
+	// Задаем координаты квадрата
+	vec2 a(0, 0), b(1, 0), c(1, 1), d(0, 1);
+
+	// Высчитываем координаты прямоугольного треугольника, который лежит своей гипотенузой на оси X, с углом alpha при основании
+	double alpha = spob::deg2rad(45);
+	vec2 tr_a(0, 0), tr_b(1, 0), tr_c(cos(alpha), 0);
+	tr_c = rotate(tr_c, vec2(0), alpha);
+
+	// Преобразуем квадрат из текущих координат к координатам переданного пространства
+	a = space.from(a);
+	b = space.from(b);
+	c = space.from(c);
+	d = space.from(d);
 
 	// Рисуем квадрат
-	draw_line(space.from(a), space.from(b));
-	draw_line(space.from(b), space.from(c));
-	draw_line(space.from(c), space.from(d));
-	draw_line(space.from(d), space.from(a));
+	draw_line(a, b);
+	draw_line(b, c);
+	draw_line(c, d);
+	draw_line(d, a);
+	
+	// Строим пространство, которое находится на верхней стороне квадрата
+	space2 tr_line = makeLine2(d, c);
 
-	// Строим прямогоульный треугольник, который лежит своей гипотенузой на оси OX, с углом alpha
-	double alpha = 45.0 / 180.0 * M_PI;
-	vec2 triangle_a = vec2(0), triangle_b = vec2(1, 0);
-	vec2 triangle_c = rotate(vec2(cos(alpha), 0), vec2(0), alpha);
+	// Переводим координаты треугольника к этому пространству
+	tr_a = tr_line.from(tr_a);
+	tr_b = tr_line.from(tr_b);
+	tr_c = tr_line.from(tr_c);
 
-	// Преобразуем координаты треугольника к координатам стороны квадрата
-	space2 triangle_line = makeLine2(b, c);
-	triangle_a = triangle_line.from(triangle_a);
-	triangle_b = triangle_line.from(triangle_b);
-	triangle_c = triangle_line.from(triangle_c);
+	// Строим пространства, которые находятся на обоих катетах этого треугольника
+	space2 l1 = makeLine2(tr_a, tr_c);
+	space2 l2 = makeLine2(tr_c, tr_b);
 
-	// Рекурсивно рисуем дерево для каждой стороны этого треугольника на дереве пифагора
-	draw_pythagoras_tree(makeLine2(space.from(triangle_a), space.from(triangle_c)));
-	draw_pythagoras_tree(makeLine2(space.from(triangle_c), space.from(triangle_b)));
+	// Рекурсивно строим дерево в этих пространствах
+	draw_pythagoras_tree(l1);
+	draw_pythagoras_tree(l2);
 }
 
 int main() {
