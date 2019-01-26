@@ -306,4 +306,39 @@ crd2 rotate(const crd2& crd, const vec2& around, double angle) {
 	return copy;
 }
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+Inter intersect(const line2& l1, const line2& l2,
+				double& t1, double& t2) {
+	if (isIntersect(l1, l2)) {
+		if (!isContain(l1, l2)) {
+			// o_1 + i_1 * t_1 = o_2 + i_2 * t_2
+			// i_1 * t_1 - i_2 * t_2 = o_2 - o_1
+			// А уравнение ix + jy = o уже решено в методе space2.toDir().
+			space2 temp(l1.i, -l2.i, vec2(0, 0));
+			auto t = temp.toDir(l2.pos - l1.pos);
+			t1 = t.x;
+			t2 = t.y;
+
+			return INTER_OVERLAPS;
+		} else {
+			return INTER_COINCIDES;
+		}
+	} else
+		return INTER_ABSENT;
+}
+
+//-----------------------------------------------------------------------------
+Inter intersect(const line2& a, const line2& b,
+				vec2& pos) {
+	double t1 = 0, t2 = 0;
+	auto returned = intersect(a, b, t1, t2);
+	if (returned == INTER_OVERLAPS)
+		pos = a.from(t1);
+	return returned;
+
+
 };
