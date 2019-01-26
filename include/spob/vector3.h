@@ -46,7 +46,6 @@ namespace spob
 	double distance(const vec3& a, const vec3& b);
 
 	//-------------------------------------------------------------------------
-	bool isNear(const vec3& a, const vec3& b);
 	bool isPerpendicular(const vec3& a, const vec3& b);
 	bool isCollinear(const vec3& a, const vec3& b);
 	bool isCoDirectional(const vec3& a, const vec3& b);
@@ -220,21 +219,13 @@ inline double distance(const vec3& a, const vec3& b) {
 }
 
 //-----------------------------------------------------------------------------
-inline bool isNear(const vec3& a, const vec3& b) {
-	const double precision = 0.0001;
-	return distance(a, b) < precision;
-}
-
-//-----------------------------------------------------------------------------
 inline bool isPerpendicular(const vec3& a, const vec3& b) {
-	const double precision = 0.0001;
-	return std::fabs(cosine(a, b)) < precision;
+	return std::fabs(cosine(a, b)) < _SPOB_IS_NEAR_PRECISION;
 }
 
 //-----------------------------------------------------------------------------
 inline bool isCollinear(const vec3& a, const vec3& b) {
-	const double precision = 0.0001;
-	return std::fabs(std::fabs(cosine(a, b)) - 1) < precision;
+	return std::fabs(std::fabs(cosine(a, b)) - 1) < _SPOB_IS_NEAR_PRECISION;
 }
 
 //-----------------------------------------------------------------------------
