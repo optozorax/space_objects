@@ -99,4 +99,13 @@ namespace spob
 	vec2 rotateDir(const vec2& d, const vec2& around, double angle);
 	crd2 rotate(const crd2& crd, const vec2& around, double angle);
 
+	//-------------------------------------------------------------------------
+	// Find intersection
+	// 2D lines
+	Inter intersect(const line2& a, const line2& b,
+					double& t1, double& t2);
+	Inter intersect(const line2& a, const line2& b,
+					vec2& pos);
+
+
 };
