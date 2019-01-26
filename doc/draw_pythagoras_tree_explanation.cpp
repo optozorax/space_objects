@@ -1,15 +1,16 @@
 #include <cmath>
+#include <iostream>
 #include "draw.h"
 #include "find_borders.h"
 
 //-----------------------------------------------------------------------------
-void draw_logo(void) {
+void draw_explanation(int n, int m) {
+	std::string add = std::to_string(n) + "_" + std::to_string(m) + "_";
+
 	int counter = 0;
 	double sz = 300;
 	double border = 20;
 
-	const int n = 5;
-	const int m = 2;
 	std::vector<vec2> poly;
 	for (int i = 0; i < n; ++i) {
 		double angle = 2.0 * pi/n * i;
@@ -48,10 +49,10 @@ void draw_logo(void) {
 		Image img(size, brd);
 		draw_crd_grid(img);
 		img.draw_polygon(poly);
-		img.save("explanation1.bmp");
+		img.save(add + "explanation1.bmp");
 
 		img.draw_crd(poly_line);
-		img.save("explanation2.bmp");
+		img.save(add + "explanation2.bmp");
 	}
 
 	//-------------------------------------------------------------------------
@@ -71,7 +72,7 @@ void draw_logo(void) {
 
 		img.draw_polygon(triangle);
 
-		img.save("explanation5.bmp");
+		img.save(add + "explanation5.bmp");
 	}
 
 	for (auto& i : poly) i = poly_line.to(i);
@@ -79,6 +80,23 @@ void draw_logo(void) {
 	space2 triangle_line = makeLine2((m == n) ? poly[0] : poly[m+1], poly[m]);
 
 	triangle = fromMas(triangle_line, triangle);
+
+	//-------------------------------------------------------------------------
+	{
+		FindBorders brd(sz, border);
+		brd.process(poly);
+		brd.process(crd_mas);
+
+		brd.finish();
+
+		vec2 size = brd.getCalculatedSize();
+		brd.invertY();
+
+		Image img(size, brd);
+		draw_crd_grid(img);
+		img.draw_polygon(poly);
+		img.save(add + "explanation3.bmp");
+	}
 
 	//-------------------------------------------------------------------------
 	{
@@ -95,10 +113,9 @@ void draw_logo(void) {
 		Image img(size, brd);
 		draw_crd_grid(img);
 		img.draw_polygon(poly);
-		img.save("explanation3.bmp");
 
 		img.draw_crd(triangle_line);
-		img.save("explanation4.bmp");
+		img.save(add + "explanation4.bmp");
 
 		img.img.clear(White);
 		draw_crd_grid(img);
@@ -106,7 +123,7 @@ void draw_logo(void) {
 		img.draw_polygon(poly);
 		img.set_pen(img.thick, Black);
 		img.draw_polygon(triangle);
-		img.save("explanation6.bmp");
+		img.save(add + "explanation6.bmp");
 	}
 
 	space2 l1 = makeLine2(triangle[0], triangle[2]);
@@ -139,21 +156,19 @@ void draw_logo(void) {
 		img.set_pen(img.thick * 1.5, img.clr);
 		img.draw_crd(l1);
 		img.draw_crd(l2);
-		img.save("explanation7.bmp");
+		img.save(add + "explanation7.bmp");
 
 		img.set_pen(img.thick / 1.5, img.clr);
 		img.draw_polygon(poly1);
 		img.draw_polygon(poly2);
-		img.save("explanation8.bmp");
+		img.save(add + "explanation8.bmp");
 	}
 }
 
-void draw_animation(void) {
+void draw_animation(int n, int m, bool isOnlyLastFrame, int maxSize, bool isDrawGrid = false) {
 	std::vector<std::vector<space2>> to_draw(15);
 	
 	// Вычисляем координаты правильного многоугольника
-	const int n = 5;
-	const int m = 2;
 	std::vector<vec2> poly;
 	for (int i = 0; i < n; ++i) {
 		double angle = 2.0 * pi/n * i;
@@ -186,7 +201,7 @@ void draw_animation(void) {
 	}
 
 	// Вычисляем границы всех многоугольников
-	FindBorders brd(500, 20);
+	FindBorders brd(maxSize, 20);
 	for (auto& i : to_draw) {
 		for (auto& j : i) {
 			brd.process(fromMas(j, poly));
@@ -195,56 +210,162 @@ void draw_animation(void) {
 	brd.finish();
 	brd.invertY();
 
-	// Рисуем каждый кадр
-	for (int i = 0; i < to_draw.size(); i++) {
+	auto draw_save = [&] (int i) {
 		Image img(brd.getCalculatedSize(), brd);
 
-		img.set_pen(1.5/80.0, setAlpha(Gray, 192));
-		img.draw_grid(getStandardCrd2());
-		img.set_pen(2.5/80.0, Gray);
-		img.draw_crd(getStandardCrd2());
-		img.set_pen(1/80.0, Black);
+		if (isDrawGrid) {
+			img.set_pen(1.5/80.0, setAlpha(Gray, 192));
+			img.draw_grid(getStandardCrd2());
+			img.set_pen(2.5/80.0, Gray);
+			img.draw_crd(getStandardCrd2());
+		}
+		img.set_pen(0.5/80.0, Black);
 
 		img.thick /= 2;
-
-		img.set_pen(img.thick, setAlpha(Black, 64));
+		img.set_pen(img.thick, Black);
 		for (int j = 0; j < i; j++) {
 			for (auto& k : to_draw[j]) {
 				img.draw_polygon(fromMas(k, poly));
 			}
 		}
 
-		img.set_pen(img.thick, Black);
+		img.set_pen(img.thick*2, Black);
 		for (auto& k : to_draw[i]) {
 			img.draw_polygon(fromMas(k, poly));
 		}
 
 		img.save("anim/n" + std::to_string(n) + "_m" + std::to_string(m) + "_a" + std::to_string(int(alpha * 180.0 / pi)) + "_N" + std::to_string(i) + ".bmp");
+	};
+
+	if (isOnlyLastFrame) {
+		draw_save(to_draw.size() - 1);
+	} else {
+		for (int i = 0; i < to_draw.size(); i++)
+			draw_save(i);
+	}
+}
+
+void draw_angle_animation(int n, int m) {
+	int count = 0;
+	for (double angle = 1.0; angle < 90.0; angle+= 0.5) {
+		// Вычисляем координаты правильного многоугольника
+		const int n = 5;
+		const int m = 2;
+		std::vector<vec2> poly;
+		for (int i = 0; i < n+1; ++i) {
+			double angle = 2.0 * pi/n * i;
+			poly.push_back(vec2(cos(angle), sin(angle)));
+		}
+		space2 poly_line = makeLine2(poly[0], poly[1]);
+		poly = toMas(poly_line, poly);
+		std::vector<vec2> poly_to_draw = poly; poly_to_draw.pop_back();
+
+		// Вычисляем координаты прямоугольного треугольника
+		double alpha = spob::deg2rad(angle);
+		std::vector<vec2> triangle = {
+			vec2(0), 
+			vec2(1, 0), 
+			rotate(vec2(cos(alpha), 0), vec2(0), alpha)
+		};
+
+		//--------------------------------------------------------------------
+		// Создаем все системы координат, где будут лежать следующие многоугольники
+		FindBorders brd(500, 20);
+		std::vector<space2> current_spaces, new_spaces;
+		current_spaces.push_back(getStandardCrd2());
+		for (int i = 0; i < 1000; i++) {
+			for (auto& j : current_spaces) if (j.i.length() > 0.007) {
+				brd.process(fromMas(j, poly));
+
+				space2 triangle_line = makeLine2(poly[m+1], poly[m]);
+				auto triangle1 = fromMas(j, fromMas(triangle_line, triangle));
+
+				// Рекурсивно рисуем дерево для каждой стороны этого треугольника на дереве пифагора
+				space2 l1 = makeLine2(triangle1[0], triangle1[2]);
+				space2 l2 = makeLine2(triangle1[2], triangle1[1]);
+				new_spaces.push_back(l1);
+				new_spaces.push_back(l2);
+			}
+			std::swap(current_spaces, new_spaces);
+			new_spaces.clear();
+		}
+		brd.finish();
+		brd.offsetToEqualSize();
+		brd.invertY();
+
+		ImageDrawing_aa img(brd.getCalculatedSize());
+		img.clear(Black);
+		img.setBrush(setAlpha(Miku, 64));
+		std::function<void(const space2&, int)> draw;
+
+		Polygon_d pp;
+		std::vector<vec2> p1, triangle1;
+		space2 triangle_line, l1, l2;
+		draw = [&] (const space2& space, int g) {
+			// Выходим из рекурсии, если одна из осей имеет длину меньше, чем 2. Это означает, что сейчас будет рисоваться квадрат с длиной стороны меньше, чем 2.
+			double size = brd.fromDir(vec2(space.i.length(), 0)).length();
+			if (size < 0.1 || g > 500)
+				return;
+
+			pp.array.clear();
+			p1 = fromMas(brd, fromMas(space, poly_to_draw));
+			for (auto& k : p1) pp.array.push_back(k);
+			img.drawPolygon(pp);
+
+			// Преобразуем координаты треугольника к координатам стороны квадрата
+			triangle_line = makeLine2(poly[m+1], poly[m]);
+			triangle1 = fromMas(triangle_line, triangle);
+
+			// Рекурсивно рисуем дерево для каждой стороны этого треугольника на дереве пифагора
+			l1 = makeLine2(triangle1[0], triangle1[2]);
+			l2 = makeLine2(triangle1[2], triangle1[1]);
+			draw(space.from(l1), g+1);
+			draw(space.from(l2), g+1);
+		};
+
+		// Рисуем
+		draw(getStandardCrd2(), 0);
+		count++;
+		std::string file = "anim/_n" + std::to_string(n) + "_m" + std::to_string(m) + "_N" + std::to_string(count) + ".bmp";
+		saveToBmp(&img, std::wstring(file.begin(), file.end()));
+
+		std::cout << count << std::endl;
 	}
 }
 
 //-----------------------------------------------------------------------------
 int main() {
-	draw_logo();
-	draw_animation();
+	draw_explanation(4, 2);
+	draw_explanation(5, 2);
+
+	draw_animation(3, 0, true, 1000);
+	draw_animation(3, 1, true, 1000);
+	draw_animation(4, 0, false, 1000, true);
+	draw_animation(4, 1, false, 1000, true);
+	draw_animation(5, 1, true, 1000);
+	draw_animation(5, 2, true, 1000);
+	draw_animation(6, 1, true, 1000);
+	draw_animation(10, 3, true, 1000);
+	draw_animation(20, 1, true, 1000);
+	draw_animation(20, 2, true, 1000);
+	draw_animation(20, 3, true, 1000);
+	draw_animation(20, 4, true, 1000);
+	draw_animation(20, 5, true, 1000);
+	draw_animation(20, 6, true, 1000);
+	draw_animation(20, 7, true, 1000);
+	draw_animation(20, 8, true, 1000);
+	draw_animation(20, 9, true, 1000);
+
+	draw_animation(3, 1, false, 500, true);
+	draw_animation(4, 0, false, 500, true);
+	draw_animation(4, 1, false, 500, true);
+	draw_animation(4, 2, false, 500, false);
+	draw_animation(5, 2, false, 500, true);
+
+	draw_angle_animation(3, 1);
+	draw_angle_animation(4, 0);
+	draw_angle_animation(4, 1);
+	draw_angle_animation(4, 2);
+	draw_angle_animation(5, 1);
+	draw_angle_animation(5, 2);
 }
-
-/*
-
-1. double angle = 2*pi/n * i;
-   poly[i] = vec2(cos(angle), sin(angle));
-2. space2 poly_line = makeLine2(poly[0], poly[1]);
-3. poly = fromMas(poly_line, poly);
-4. space2 triangle_line = makeLine2(poly[1], poly[2]);
-5. std::vector<vec2> triangle = {
-       vec2(0, 0), 
-       vec2(1, 0), 
-       rotate(vec2(cos(alpha), 0), vec2(0), alpha)
-   };
-6. triangle = fromMas(triangle_line, triangle);
-7. space2 l1 = makeLine2(triangle[0], triangle[2]);
-   space2 l2 = makeLine2(triangle[2], triangle[1]);
-8. recursion(l1);
-   resursion(l2);
-
-*/

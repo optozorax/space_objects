@@ -25,6 +25,8 @@ namespace spob
 		/** Возвращает итоговый размер изображения. */
 		vec2 getCalculatedSize(void) const;
 
+		void offsetToEqualSize(void);
+
 		/** Определяет, находится ли pos внутри рассчитанных границ. */
 		bool isInside(vec2 pos) const;
 

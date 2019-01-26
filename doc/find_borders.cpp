@@ -67,6 +67,12 @@ vec2 FindBorders::getCalculatedSize(void) const {
 }
 
 //-----------------------------------------------------------------------------
+void FindBorders::offsetToEqualSize(void) {
+	pos += (vec2(m_maxSize + m_border) - m_size)/2.0;
+	m_size = vec2(m_maxSize + m_border);
+}
+
+//-----------------------------------------------------------------------------
 bool FindBorders::isInside(vec2 pos) const {
 	return (pos.x > min.x) && (pos.y > min.y) && (pos.x < max.x) && (pos.y < max.y);
 }
