@@ -37,7 +37,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	int count = 4 + 2 * 4;
 	for (int i = 0; i < count; ++i) {
-		double angle = i * 2.0 * M_PI / double(count);
+		double angle = deg2rad(360.0 / count * i);
 		draw_anything(rotate(tr, center, angle));
 	}
 

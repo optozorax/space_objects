@@ -24,8 +24,8 @@ void draw_3D_cube(const space2& logic_to_img) {
 
 	line3 vertical(vec3(0, 0, 1), vec3(0));
 	line3 horizontal(vec3(0, 1, 0), vec3(0));
-	double alpha = 30.0 / 180.0 * M_PI;
-	double beta = 30.0 / 180.0 * M_PI;
+	double alpha = deg2rad(30);
+	double beta = deg2rad(30);
 
 	// Вращаем её сначала относительно горизонтальной оси, то есть поднимаем её немного вверх. Направление оси k в точку (0, 0, 0) по прежнему остается.
 	cam = rotate(cam, horizontal, -beta);

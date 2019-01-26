@@ -44,6 +44,7 @@
 * `intersect(a, b)` - находит пересечение двух объектов.
 * `toMas(c, mas)`, `toDirMas(c, mas)`, `fromMas(c, mas)`, `fromDirMas(c, mas)` - вышеописанные методы, адаптированные для массового преобразования массивов.
 * `invert(crd)` - возвращает такую систему координат `icrd`, что `icrd.to(x) == crd.from(x)` и `icrd.from(x) == crd.to(x)`.
+* `deg2rad(deg)`, `rad2deg(rad)` - функции для преобразования угла из градусов (`deg`) в радианы (`rad`) и наоборот.
 
 ## Методы для проверки в этих классах:
 
@@ -69,14 +70,13 @@
 
 ## А что с остальным?
 
-Вполне можно догадаться о предназначении методов по их названию и коду. Пока не буду описывать принцип их работы, тонкости и подводные камни. Оставлю это на завтрашнего себя и волю судьбы.
+Вполне можно догадаться о предназначении методов по их названию и коду.
 
 # Использование
 
 ## Используем преобразование координат для рисования графика синуса
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -116,7 +116,6 @@ int main() {
 ## Рисуем стрелки
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -154,8 +153,8 @@ int main() {
 	// Рисование стрелок по всем направлениям
 	int count = 4 + 3 * 4;
 	for (int i = 0; i < count; ++i) {
-		double angle = i * 2.0 * M_PI / double(count);
-		draw_arrow(rotate(a, center, angle), rotate(b, center, angle), 30.0 / 180.0 * M_PI, 10);
+		double angle = deg2rad(360.0 / count * i);
+		draw_arrow(rotate(a, center, angle), rotate(b, center, angle), deg2rad(30), 10);
 	}
 }
 ```
@@ -169,7 +168,6 @@ int main() {
 ## Рисуем радиально симметричные изображения
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -197,7 +195,7 @@ int main() {
 
 	int count = 4 + 2 * 4;
 	for (int i = 0; i < count; ++i) {
-		double angle = i * 2.0 * M_PI / double(count);
+		double angle = deg2rad(360.0 / count * i);
 		draw_anything(rotate(tr, center, angle));
 	}
 }
@@ -212,7 +210,6 @@ int main() {
 ## Рисуем дерево Пифагора
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -274,7 +271,6 @@ int main() {
 ## Рисуем дерево Пифагора на произвольном основании правильного многоугольника
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -342,7 +338,6 @@ int main() {
 ## Рисуем проекцию трехмерного куба на экран
 
 ```c++
-#include <cmath>
 #include <spob/spob.h>
 
 using namespace spob;
@@ -360,8 +355,8 @@ void draw_3D_cube(const space2& logic_to_img) {
 
 	line3 vertical(vec3(0, 0, 1), vec3(0));
 	line3 horizontal(vec3(0, 1, 0), vec3(0));
-	double alpha = 30.0 / 180.0 * M_PI;
-	double beta = 30.0 / 180.0 * M_PI;
+	double alpha = deg2rad(30);
+	double beta = deg2rad(30);
 
 	// Вращаем её сначала относительно горизонтальной оси, то есть поднимаем её немного вверх. Направление оси k в точку (0, 0, 0) по прежнему остается.
 	cam = rotate(cam, horizontal, -beta);

@@ -47,8 +47,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	// Рисование стрелок по всем направлениям
 	int count = 4 + 3 * 4;
 	for (int i = 0; i < count; ++i) {
-		double angle = i * 2.0 * M_PI / double(count);
-		draw_arrow(rotate(a, center, angle), rotate(b, center, angle), 30.0 / 180.0 * M_PI, 10);
+		double angle = deg2rad(360.0 / count * i);
+		draw_arrow(rotate(a, center, angle), rotate(b, center, angle), deg2rad(30), 10)
 	}
 
 	saveToBmp(&img, L"arrow.bmp");
