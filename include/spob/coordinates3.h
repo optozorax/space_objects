@@ -165,4 +165,308 @@ namespace spob
 	Inter intersect(const plane3& plane1, const plane3& plane2,
 					line3& line);
 
+//=============================================================================
+//=============================================================================
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+inline crd3::crd3() : i(1, 0, 0), j(0, 1, 0), k(0, 0, 1), pos(0) {
+}
+
+//-----------------------------------------------------------------------------
+inline crd3::crd3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : i(i), j(j), k(k), pos(pos) {
+}
+
+//-----------------------------------------------------------------------------
+inline void crd3::invert(void) {
+	k.negate();
+}
+
+//-----------------------------------------------------------------------------
+inline void crd3::place(const vec3& to) {
+	pos = to;
+}
+
+//-----------------------------------------------------------------------------
+inline void crd3::move(const vec3& offset) {
+	pos += offset;
+}
+
+//-----------------------------------------------------------------------------
+inline crd3 getStandardCrd3(void) {
+	return crd3(vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1), vec3(0, 0, 0));
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline space3::space3() : crd3() {
+}
+
+//-----------------------------------------------------------------------------
+inline space3::space3(const crd3& crd) {
+	operator=(crd);
+}
+
+//-----------------------------------------------------------------------------
+inline space3::space3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
+}
+
+//-----------------------------------------------------------------------------
+inline space3& space3::operator=(const crd3& crd) {
+	i = crd.i;
+	j = crd.j;
+	k = crd.k;
+	pos = crd.pos;
+	return *this;
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 space3::to(const vec3& o) const {
+	return toDir(o - pos);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 space3::from(const vec3& o) const {
+	return pos + i*o.x + j*o.y + k*o.z;
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 space3::fromDir(const vec3& d) const {
+	return from(d) - pos;
+}
+
+//-----------------------------------------------------------------------------
+inline crd3 invert(const crd3& crd) {
+	return space3(crd).to(getStandardCrd3());
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline plane3::plane3() : crd3() {
+}
+
+//-----------------------------------------------------------------------------
+inline plane3::plane3(const crd3& crd) {
+	operator=(crd);
+}
+
+//-----------------------------------------------------------------------------
+inline plane3::plane3(const vec3& i, const vec3& j, const vec3& pos) : crd3(i, j, cross(i, j), pos) {
+}
+
+//-----------------------------------------------------------------------------
+inline plane3::plane3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
+} 
+
+//-----------------------------------------------------------------------------
+inline plane3& plane3::operator=(const crd3& crd) {
+	i = crd.i;
+	j = crd.j;
+	k = crd.k;
+	pos = crd.pos;
+	return *this;
+}
+
+//-----------------------------------------------------------------------------
+inline vec2 plane3::to(const vec3& o) const {
+	return toDir(o - pos);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 plane3::from(const vec2& o) const {
+	return pos + i*o.x + j*o.y;
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 plane3::fromDir(const vec2& d) const {
+	return from(d) - pos;
+}
+
+//-----------------------------------------------------------------------------
+inline line2 plane3::to(const line3& o) const {
+	return line2(to(o.pos), toDir(o.i));
+}
+
+//-----------------------------------------------------------------------------
+inline line3 plane3::from(const line2& o) const {
+	return line3(from(o.pos), fromDir(o.i));
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 plane3::project(const vec3& o) const {
+	return from(to(o));
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 plane3::projectDir(const vec3& d) const {
+	return fromDir(toDir(d));
+}
+
+//-----------------------------------------------------------------------------
+inline plane3 makePlane3(const vec3& pos, const vec3& toI, const vec3& toJ) {
+	return plane3(toI - pos, toJ - pos, pos);
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline line3::line3() : crd3() {
+}
+
+//-----------------------------------------------------------------------------
+inline line3::line3(const crd3& crd) {
+	operator=(crd);
+}
+
+//-----------------------------------------------------------------------------
+inline line3::line3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
+} 
+
+//-----------------------------------------------------------------------------
+inline line3& line3::operator=(const crd3& crd) {
+	i = crd.i;
+	j = crd.j;
+	k = crd.k;
+	pos = crd.pos;
+	return *this;
+}
+
+//-----------------------------------------------------------------------------
+inline double line3::to(const vec3& o) const {
+	return toDir(o - pos);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 line3::from(const double& o) const {
+	return pos + i*o;
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 line3::fromDir(const double& d) const {
+	return from(d) - pos;
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 line3::project(const vec3& o) const {
+	return from(to(o));
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 line3::projectDir(const vec3& d) const {
+	return fromDir(toDir(d));
+}
+
+//-----------------------------------------------------------------------------
+inline line3 makeLine3(const vec3& pos, const vec3& toI) {
+	return line3(toI - pos, pos);
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline bool isPerpendicular(const plane3& a, const plane3& b) {
+	return isPerpendicular(a.k, b.k);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isPerpendicular(const plane3& plane, const line3& line) {
+	return isPerpendicular(plane.k, line.i);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isPerpendicular(const plane3& plane, const vec3& d) {
+	return isCollinear(plane.k, d);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isPerpendicular(const line3& a, const line3& b) {
+	return isPerpendicular(a.i, b.i);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isPerpendicular(const line3& line, const vec3& d) {
+	return isPerpendicular(line.i, d);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isIntersect(const plane3& a, const plane3& b) {
+	return !isParallel(a, b);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isIntersect(const plane3& plane, const line3& line) {
+	return !isParallel(plane, line);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isIntersect(const line3& a, const line3& b) {
+	const double precision = 0.0001;
+	return !isParallel(a, b) && distance(plane3(a.i, b.i, a.pos), plane3(a.i, b.i, b.pos)) < precision;
+}
+
+//-----------------------------------------------------------------------------
+inline bool isContain(const plane3& a, const plane3& b) {
+	return isParallel(a, b) && isContain(a, b.pos);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isContain(const plane3& plane, const line3& line) {
+	return isParallel(plane, line) && isContain(plane, line.pos);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isContain(const plane3& plane, const vec3& o) {
+	return isParallel(plane, plane.pos - o) || isNear(plane.pos, o);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isContain(const line3& a, const line3& b) {
+	return isParallel(a, b) && isContain(a, b.pos);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isContain(const line3& line, const vec3& o) {
+	return isCollinear(line.i, line.pos - o) || isNear(line.pos, o);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isParallel(const plane3& a, const plane3& b) {
+	return isCollinear(a.k, b.k);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isParallel(const plane3& plane, const line3& line) {
+	return isPerpendicular(plane.k, line.i);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isParallel(const plane3& plane, const vec3& d) {
+	return isPerpendicular(plane.k, d);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isParallel(const line3& a, const line3& b) {
+	return isCollinear(a.i, b.i);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isParallel(const line3& line, const vec3& d) {
+	return isCollinear(line.i, d);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isSkew(const line3& a, const line3& b) {
+	return !isIntersect(a, b) && !isParallel(a, b);
+}
+
 };

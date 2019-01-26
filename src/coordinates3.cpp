@@ -4,19 +4,6 @@ namespace spob
 {
 
 //-----------------------------------------------------------------------------
-crd3::crd3() : i(1, 0, 0), j(0, 1, 0), k(0, 0, 1), pos(0) {
-}
-
-//-----------------------------------------------------------------------------
-crd3::crd3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : i(i), j(j), k(k), pos(pos) {
-}
-
-//-----------------------------------------------------------------------------
-void crd3::invert(void) {
-	k.negate();
-}
-
-//-----------------------------------------------------------------------------
 void crd3::normalize(void) {
 	i.normalize();
 	j.normalize();
@@ -34,16 +21,6 @@ void crd3::orthogonalize(void) {
 void crd3::orthonormalize(void) {
 	orthogonalize();
 	normalize();
-}
-
-//-----------------------------------------------------------------------------
-void crd3::place(const vec3& to) {
-	pos = to;
-}
-
-//-----------------------------------------------------------------------------
-void crd3::move(const vec3& offset) {
-	pos += offset;
 }
 
 //-----------------------------------------------------------------------------
@@ -70,40 +47,8 @@ bool crd3::isOrthonormal(void) const {
 }
 
 //-----------------------------------------------------------------------------
-crd3 getStandardCrd3(void) {
-	return crd3(vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1), vec3(0, 0, 0));
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-space3::space3() : crd3() {
-}
-
-//-----------------------------------------------------------------------------
-space3::space3(const crd3& crd) {
-	operator=(crd);
-}
-
-//-----------------------------------------------------------------------------
-space3::space3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
-}
-
-//-----------------------------------------------------------------------------
-space3& space3::operator=(const crd3& crd) {
-	i = crd.i;
-	j = crd.j;
-	k = crd.k;
-	pos = crd.pos;
-	return *this;
-}
-
-//-----------------------------------------------------------------------------
-vec3 space3::to(const vec3& o) const {
-	return toDir(o - pos);
-}
 
 //-----------------------------------------------------------------------------
 vec3 space3::toDir(const vec3& o) const {
@@ -122,16 +67,6 @@ vec3 space3::toDir(const vec3& o) const {
 	result.y = -(i.x*e + k.x*f + o.x*h)/down;
 	result.z = (i.x*g + j.x*f + o.x*c)/down;
 	return result;
-}
-
-//-----------------------------------------------------------------------------
-vec3 space3::from(const vec3& o) const {
-	return pos + i*o.x + j*o.y + k*o.z;
-}
-
-//-----------------------------------------------------------------------------
-vec3 space3::fromDir(const vec3& d) const {
-	return from(d) - pos;
 }
 
 //-----------------------------------------------------------------------------
@@ -155,44 +90,8 @@ crd3 space3::from(const crd3& crd) const {
 }
 
 //-----------------------------------------------------------------------------
-crd3 invert(const crd3& crd) {
-	return space3(crd).to(getStandardCrd3());
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-plane3::plane3() : crd3() {
-}
-
-//-----------------------------------------------------------------------------
-plane3::plane3(const crd3& crd) {
-	operator=(crd);
-}
-
-//-----------------------------------------------------------------------------
-plane3::plane3(const vec3& i, const vec3& j, const vec3& pos) : crd3(i, j, cross(i, j), pos) {
-}
-
-//-----------------------------------------------------------------------------
-plane3::plane3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
-} 
-
-//-----------------------------------------------------------------------------
-plane3& plane3::operator=(const crd3& crd) {
-	i = crd.i;
-	j = crd.j;
-	k = crd.k;
-	pos = crd.pos;
-	return *this;
-}
-
-//-----------------------------------------------------------------------------
-vec2 plane3::to(const vec3& o) const {
-	return toDir(o - pos);
-}
 
 //-----------------------------------------------------------------------------
 vec2 plane3::toDir(const vec3& o) const {
@@ -212,52 +111,8 @@ vec2 plane3::toDir(const vec3& o) const {
 }
 
 //-----------------------------------------------------------------------------
-vec3 plane3::from(const vec2& o) const {
-	return pos + i*o.x + j*o.y;
-}
-
-//-----------------------------------------------------------------------------
-vec3 plane3::fromDir(const vec2& d) const {
-	return from(d) - pos;
-}
-
-//-----------------------------------------------------------------------------
-line2 plane3::to(const line3& o) const {
-	return line2(to(o.pos), toDir(o.i));
-}
-
-//-----------------------------------------------------------------------------
-line3 plane3::from(const line2& o) const {
-	return line3(from(o.pos), fromDir(o.i));
-}
-
-//-----------------------------------------------------------------------------
-vec3 plane3::project(const vec3& o) const {
-	return from(to(o));
-}
-
-//-----------------------------------------------------------------------------
-vec3 plane3::projectDir(const vec3& d) const {
-	return fromDir(toDir(d));
-}
-
-//-----------------------------------------------------------------------------
-plane3 makePlane3(const vec3& pos, const vec3& toI, const vec3& toJ) {
-	return plane3(toI - pos, toJ - pos, pos);
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-line3::line3() : crd3() {
-}
-
-//-----------------------------------------------------------------------------
-line3::line3(const crd3& crd) {
-	operator=(crd);
-}
 
 //-----------------------------------------------------------------------------
 line3::line3(const vec3& i1, const vec3& pos1) {
@@ -277,24 +132,6 @@ line3::line3(const vec3& i1, const vec3& pos1) {
 }
 
 //-----------------------------------------------------------------------------
-line3::line3(const vec3& i, const vec3& j, const vec3& k, const vec3& pos) : crd3(i, j, k, pos) {
-} 
-
-//-----------------------------------------------------------------------------
-line3& line3::operator=(const crd3& crd) {
-	i = crd.i;
-	j = crd.j;
-	k = crd.k;
-	pos = crd.pos;
-	return *this;
-}
-
-//-----------------------------------------------------------------------------
-double line3::to(const vec3& o) const {
-	return toDir(o - pos);
-}
-
-//-----------------------------------------------------------------------------
 double line3::toDir(const vec3& o) const {
 	// Решается векторное уравнение i*result.x + j*result.y + k*result.z = o, но координаты y и z игнорируется
 	vec2 result;
@@ -305,131 +142,6 @@ double line3::toDir(const vec3& o) const {
 	double d = j.y*o.z - o.y*j.z;
 	double e = o.y*k.z - k.y*o.z;
 	return (j.x*e + k.x*d + o.x*a)/down;
-}
-
-//-----------------------------------------------------------------------------
-vec3 line3::from(const double& o) const {
-	return pos + i*o;
-}
-
-//-----------------------------------------------------------------------------
-vec3 line3::fromDir(const double& d) const {
-	return from(d) - pos;
-}
-
-//-----------------------------------------------------------------------------
-vec3 line3::project(const vec3& o) const {
-	return from(to(o));
-}
-
-//-----------------------------------------------------------------------------
-vec3 line3::projectDir(const vec3& d) const {
-	return fromDir(toDir(d));
-}
-
-//-----------------------------------------------------------------------------
-line3 makeLine3(const vec3& pos, const vec3& toI) {
-	return line3(toI - pos, pos);
-}
-
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-bool isPerpendicular(const plane3& a, const plane3& b) {
-	return isPerpendicular(a.k, b.k);
-}
-
-//-----------------------------------------------------------------------------
-bool isPerpendicular(const plane3& plane, const line3& line) {
-	return isPerpendicular(plane.k, line.i);
-}
-
-//-----------------------------------------------------------------------------
-bool isPerpendicular(const plane3& plane, const vec3& d) {
-	return isCollinear(plane.k, d);
-}
-
-//-----------------------------------------------------------------------------
-bool isPerpendicular(const line3& a, const line3& b) {
-	return isPerpendicular(a.i, b.i);
-}
-
-//-----------------------------------------------------------------------------
-bool isPerpendicular(const line3& line, const vec3& d) {
-	return isPerpendicular(line.i, d);
-}
-
-//-----------------------------------------------------------------------------
-bool isIntersect(const plane3& a, const plane3& b) {
-	return !isParallel(a, b);
-}
-
-//-----------------------------------------------------------------------------
-bool isIntersect(const plane3& plane, const line3& line) {
-	return !isParallel(plane, line);
-}
-
-//-----------------------------------------------------------------------------
-bool isIntersect(const line3& a, const line3& b) {
-	const double precision = 0.0001;
-	return !isParallel(a, b) && distance(plane3(a.i, b.i, a.pos), plane3(a.i, b.i, b.pos)) < precision;
-}
-
-//-----------------------------------------------------------------------------
-bool isContain(const plane3& a, const plane3& b) {
-	return isParallel(a, b) && isContain(a, b.pos);
-}
-
-//-----------------------------------------------------------------------------
-bool isContain(const plane3& plane, const line3& line) {
-	return isParallel(plane, line) && isContain(plane, line.pos);
-}
-
-//-----------------------------------------------------------------------------
-bool isContain(const plane3& plane, const vec3& o) {
-	return isParallel(plane, plane.pos - o) || isNear(plane.pos, o);
-}
-
-//-----------------------------------------------------------------------------
-bool isContain(const line3& a, const line3& b) {
-	return isParallel(a, b) && isContain(a, b.pos);
-}
-
-//-----------------------------------------------------------------------------
-bool isContain(const line3& line, const vec3& o) {
-	return isCollinear(line.i, line.pos - o) || isNear(line.pos, o);
-}
-
-//-----------------------------------------------------------------------------
-bool isParallel(const plane3& a, const plane3& b) {
-	return isCollinear(a.k, b.k);
-}
-
-//-----------------------------------------------------------------------------
-bool isParallel(const plane3& plane, const line3& line) {
-	return isPerpendicular(plane.k, line.i);
-}
-
-//-----------------------------------------------------------------------------
-bool isParallel(const plane3& plane, const vec3& d) {
-	return isPerpendicular(plane.k, d);
-}
-
-//-----------------------------------------------------------------------------
-bool isParallel(const line3& a, const line3& b) {
-	return isCollinear(a.i, b.i);
-}
-
-//-----------------------------------------------------------------------------
-bool isParallel(const line3& line, const vec3& d) {
-	return isCollinear(line.i, d);
-}
-
-//-----------------------------------------------------------------------------
-bool isSkew(const line3& a, const line3& b) {
-	return !isIntersect(a, b) && !isParallel(a, b);
 }
 
 //-----------------------------------------------------------------------------
