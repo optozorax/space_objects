@@ -3,6 +3,8 @@
 #include <cmath>
 #include <exception>
 
+#include <spob/common.h>
+
 namespace spob
 {
 
