@@ -54,8 +54,11 @@ namespace spob
 		crd2 from(const crd2& crd) const;
 	};
 
-	// crd.to() == invert(crd).from()
+	// crd.to(a) == invert(crd).from(a)
 	crd2 invert(const crd2& crd);
+
+	// a.to(b.to(p)) == combine(a, b).to(p)
+	crd2 combine(const crd2& a, const crd2& b);
 
 	//-------------------------------------------------------------------------
 	class line2 : public crd2
@@ -206,6 +209,11 @@ inline vec2 space2::fromDir(const vec2& d) const {
 //-----------------------------------------------------------------------------
 inline crd2 invert(const crd2& crd) {
 	return space2(crd).to(getStandardCrd2());
+}
+
+//-----------------------------------------------------------------------------
+inline crd2 combine(const crd2& a, const crd2& b) {
+	return space2(b).from(a);
 }
 
 //-----------------------------------------------------------------------------

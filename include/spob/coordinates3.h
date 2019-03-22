@@ -60,6 +60,9 @@ namespace spob
 	// crd.to() == invert(crd).from()
 	crd3 invert(const crd3& crd);
 
+	// a.to(b.to(p)) == combine(a, b).to(p)
+	crd3 combine(const crd3& a, const crd3& b);
+
 	//---------------------------------------------------------------------
 	class plane3 : public crd3
 	{
@@ -242,6 +245,11 @@ inline vec3 space3::fromDir(const vec3& d) const {
 //-----------------------------------------------------------------------------
 inline crd3 invert(const crd3& crd) {
 	return space3(crd).to(getStandardCrd3());
+}
+
+//-----------------------------------------------------------------------------
+inline crd3 combine(const crd3& a, const crd3& b) {
+	return space3(b).from(a);
 }
 
 //-----------------------------------------------------------------------------
