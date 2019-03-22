@@ -54,6 +54,10 @@ namespace spob
 	bool isCoDirectional(const vec2& a, const vec2& b);
 	bool isAntiDirectional(const vec2& a, const vec2& b);
 
+	//-------------------------------------------------------------------------
+	vec2 cartesian2polar(const vec2& a);
+	vec2 polar2cartesian(const vec2& a);
+
 //=============================================================================
 //=============================================================================
 //=============================================================================
@@ -233,6 +237,20 @@ inline bool isCoDirectional(const vec2& a, const vec2& b) {
 //-----------------------------------------------------------------------------
 inline bool isAntiDirectional(const vec2& a, const vec2& b) {
 	return (cosine(a, b) < 0) && isCollinear(a, b);
+}
+
+//-----------------------------------------------------------------------------
+inline vec2 cartesian2polar(const vec2& cartesian) {
+	const double& x = cartesian.x;
+	const double& y = cartesian.y;
+	return vec2(std::atan2(y, x), std::sqrt(x*x + y*y));
+}
+
+//-----------------------------------------------------------------------------
+inline vec2 polar2cartesian(const vec2& spheric) {
+	const double& phi = spheric.x;
+	const double& r = spheric.y;
+	return vec2(r * std::cos(phi), r * std::sin(phi));
 }
 
 };

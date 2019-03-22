@@ -54,6 +54,12 @@ namespace spob
 	bool isCoDirectional(const vec3& a, const vec3& b);
 	bool isAntiDirectional(const vec3& a, const vec3& b);
 
+	//-------------------------------------------------------------------------
+	vec3 cartesian2spheric(const vec3& a);
+	vec3 spheric2cartesian(const vec3& a);
+	vec3 cartesian2cylindrical(const vec3& a);
+	vec3 cylindrical2cartesian(const vec3& a);
+
 //=============================================================================
 //=============================================================================
 //=============================================================================
@@ -239,6 +245,46 @@ inline bool isCoDirectional(const vec3& a, const vec3& b) {
 //-----------------------------------------------------------------------------
 inline bool isAntiDirectional(const vec3& a, const vec3& b) {
 	return (cosine(a, b) < 0) && isCollinear(a, b);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 cartesian2spheric(const vec3& cartesian) {
+	const double& x = cartesian.x;
+	const double& y = cartesian.y;
+	const double& z = cartesian.z;
+	return vec3(
+		std::atan2(y, x),
+		std::atan2(std::sqrt(x*x + y*y), z),
+		std::sqrt(x*x + y*y + z*z)
+	);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 spheric2cartesian(const vec3& spheric) {
+	const double& alpha = spheric.x;
+	const double& beta = spheric.y;
+	const double& r = spheric.z;
+	return vec3(
+		r * sin(beta) * cos(alpha), 
+		r * sin(beta) * sin(alpha), 
+		r * cos(beta)
+	);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 cartesian2cylindrical(const vec3& cartesian) {
+	const double& x = cartesian.x;
+	const double& y = cartesian.y;
+	const double& z = cartesian.z;
+	return vec3(std::atan2(y, x), std::sqrt(x*x + y*y), z);
+}
+
+//-----------------------------------------------------------------------------
+inline vec3 cylindrical2cartesian(const vec3& cylindrical) {
+	const double& phi = cylindrical.x;
+	const double& r = cylindrical.y;
+	const double& z = cylindrical.z;
+	return vec3(r * std::cos(phi), r * std::sin(phi), z);
 }
 
 };
