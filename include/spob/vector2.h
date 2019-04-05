@@ -47,6 +47,9 @@ namespace spob
 	double project(const vec2& a, const vec2& to);
 	vec2 projection(const vec2& a, const vec2& to);
 	double distance(const vec2& a, const vec2& b);
+	double getAngle(const vec2& center, const vec2& p); // Угол точки p относительно точки center
+	double getClockWiseDistance(double alpha, double beta); // Расстояние между углом alpha и beta по часовой стрелке
+	double getRightAngle(const vec2& a, const vec2& b, const vec2& c); // По направлению кривой abc возвращает величину угла справа в точке b
 
 	//-------------------------------------------------------------------------
 	bool isPerpendicular(const vec2& a, const vec2& b);
@@ -217,6 +220,21 @@ inline vec2 projection(const vec2& a, const vec2& to) {
 //-----------------------------------------------------------------------------
 inline double distance(const vec2& a, const vec2& b) {
 	return (b - a).length();
+}
+
+//-----------------------------------------------------------------------------
+inline double getAngle(const vec2& center, const vec2& p) {
+	return std::atan2(center.y-p.y, center.x-p.x) + _SPOB_PI;
+}
+
+//-----------------------------------------------------------------------------
+inline double getClockWiseDistance(double alpha, double beta) {
+	return std::fmod(2.0*_SPOB_PI + (alpha - beta), 2.0*_SPOB_PI);
+}
+
+//-----------------------------------------------------------------------------
+inline double getRightAngle(const vec2& a, const vec2& b, const vec2& c) {
+	return getClockWiseDistance(getAngle(b, c), getAngle(b, a));
 }
 
 //-----------------------------------------------------------------------------
