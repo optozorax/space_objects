@@ -35,23 +35,57 @@ Inter intersect(const rect2& rect, const line2& line,
 }
 
 //-----------------------------------------------------------------------------
-double findBorder(const std::function<bool(double)>& f) {
-	// Функция f имеет вид: f([0; c]) = true; f([c; inf]) = false. Данная функция ищет c.
-	double a = 0;
-	double b = 1;
-	while (fabs(b - a) > 0.0001)  {
-		if (f(b)) {
-			b *= 2;
-		} else {
-			double c = (a + b) / 2.0;
-			if (f(c))
-				a = c;
-			else
-				b = c;
-		}
+vector<vec2> calcRegularPolygon(int n, vec2 center, double r, double fi) {
+	vector<vec2> result;
+	for (int i = 0; i < n; ++i) {
+		double angle = -i * 2.0 * _SPOB_PI/n + fi;
+		result.push_back(center + r * vec2(sin(angle), cos(angle)));
 	}
+	return result;
+}
 
-	return (a + b)/2.0;
+//-----------------------------------------------------------------------------
+vector<vec2> placePolyOnEdge(const vector<vec2>& poly, int edge) {
+	vec2 a = poly[edge], b = poly[edge+1 == poly.size() ? 0 : edge+1];
+	space2 l = makeLine2(a, b);
+
+	vector<vec2> result;
+	for (auto& i : poly)
+		result.push_back(l.to(i));
+
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+vector<vec2> rotatePoly(const vector<vec2>& poly, int edge) {
+	vector<vec2> result;
+	for (int i = edge; i < poly.size(); ++i)
+		result.push_back(poly[i]);
+
+	for (int i = 0; i < edge; ++i)
+		result.push_back(poly[i]);
+
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+vector<vec2> sumPolygons(const vector<vec2>& poly1, const vector<vec2>& poly2, int edge1, int edge2) {
+	auto poly2r = rotatePoly(placePolyOnEdge(poly2, edge2), edge2);
+
+	vector<vec2> result;
+	for (int i = 0; i <= edge1; ++i)
+		result.push_back(poly1[i]);
+
+	vec2 a = poly1[edge1], b = poly1[edge1+1 == poly1.size() ? 0 : edge1+1];
+	space2 line = makeLine2(a, b);
+
+	for (int i = poly2r.size()-1; i > 1; --i)
+		result.push_back(line.from(poly2r[i]));
+
+	for (int i = edge1+1; i < poly1.size(); ++i)
+		result.push_back(poly1[i]);
+
+	return result;
 }
 
 //=============================================================================
@@ -60,8 +94,8 @@ double findBorder(const std::function<bool(double)>& f) {
 
 Image::Image(const vec2& size, const space2& screen_tr) : img(size), screen_tr(screen_tr) {
 	img.clear(White);
-	rect.a = screen_tr.to(vec2(0, 0));
-	rect.b = screen_tr.to(size);
+	rect.a = vec2(0, 0);
+	rect.b = size;
 }
 
 //-----------------------------------------------------------------------------
@@ -95,8 +129,9 @@ void Image::draw_crd(const crd2& crd) {
 	draw_arrow(crd.pos, crd.pos + crd.i, arrow_angle, arrow_size);
 	set_pen(thick, Blue);
 	draw_arrow(crd.pos, crd.pos + crd.j, arrow_angle, arrow_size);
-	set_pen(thick, current_clr);
+	set_pen(thick, Black);
 	draw_circle(crd.pos, thick, Black);
+	set_pen(thick, current_clr);
 }
 
 //-----------------------------------------------------------------------------
@@ -121,8 +156,8 @@ void Image::draw_arrow(const vec2& a, const vec2& b, double angle, double size) 
 //-----------------------------------------------------------------------------
 void Image::draw_inf_line(const line2& line) {
 	vec2 a, b;
-	if (intersect(rect, line, a, b))
-		draw_line(a, b);
+	if (intersect(rect, screen_tr.from(line), a, b))
+		draw_line(screen_tr.to(a), screen_tr.to(b));
 }
 
 //-----------------------------------------------------------------------------
@@ -157,10 +192,10 @@ void Image::draw_line2(const line2& line) {
 //-----------------------------------------------------------------------------
 void Image::draw_grid(const space2& space) {
 	double current_thick = thick;
-	double current_clr = clr;
+	Color current_clr = clr;
 
 	auto draw_one_dim_grid = [&] (line2 l) {
-		auto offset_l = [&l] (const line2& l, double a) -> line2 {
+		auto offset_l = [] (const line2& l, double a) -> line2 {
 			line2 lcopy = l;
 			lcopy.pos += lcopy.j * a;
 			return lcopy;
@@ -168,31 +203,59 @@ void Image::draw_grid(const space2& space) {
 
 		auto is_line_border = [&] (const line2& l, double a) -> bool {
 			double t1, t2;
-			return intersect(rect, offset_l(l, a), t1, t2);
+			return intersect(rect, screen_tr.from(offset_l(l, a)), t1, t2);
 		};
 
-		l.j.negate();
-		double lmin = findBorder(std::bind(is_line_border, l, std::placeholders::_1));
-		l.j.negate();
-		double lmax = findBorder(std::bind(is_line_border, l, std::placeholders::_1));
+		vec2 screenCenter = screen_tr.to(vec2(0.5, 0.5));
+		double dist = space2(l).to(screenCenter).y;
 
-		const double coef = 2;
+		double coef = 2;
 		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
-		for (int i = -lmin; i < lmax; i++) {
-			if (i == 0) {
+		auto draw_line = [&] (double offset) {
+			if (offset == 0) {
 				set_pen(current_thick, current_clr);
-				draw_inf_line(offset_l(l, i));
+				draw_inf_line(offset_l(l, offset));
 				set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
 			} else {
-				draw_inf_line(offset_l(l, i));
+				draw_inf_line(offset_l(l, offset));
 			}
+		};
+
+		if (is_line_border(l, int(dist)))
+			draw_line(int(dist));
+
+		int i;
+		
+		i = dist;
+		while (is_line_border(l, i+1)) {
+			i++;
+			draw_line(i);
 		}
 
-		const double coef2 = 2 * coef;
-		set_pen(current_thick / coef2, setAlpha(current_clr, getAlpha(current_clr) / coef2));
-		for (int i = -lmin * 5; i < lmax * 5; i++) {
+		i = dist;
+		while (is_line_border(l, i-1)) {
+			i--;
+			draw_line(i);
+		}
+
+		coef = 2.0 * coef;
+		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
+
+		if (is_line_border(l, int(dist * 5)/5.0))
+			draw_line(int(dist * 5)/5.0);
+
+		i = dist * 5;
+		while (is_line_border(l, (i+1)/5.0)) {
+			i++;
 			if (i % 5 != 0)
-				draw_inf_line(offset_l(l, i/5.0));
+				draw_line(i/5.0);
+		}
+
+		i = dist * 5;
+		while (is_line_border(l, (i-1)/5.0)) {
+			i--;
+			if (i % 5 != 0)
+				draw_line(i/5.0);
 		}
 	};
 
@@ -234,12 +297,36 @@ void Image::draw_intersect(const line2& l1, const line2& l2) {
 //-----------------------------------------------------------------------------
 void Image::set_pen(double thick1_, Color clr1) {
 	thick = thick1_;
-	double thick1 = screen_tr.fromDir(vec2(thick1_, 0)).x;
+	double thick1 = fromThick(thick1_);
 	clr = clr1;
 	img.setPen(Pen(thick1, clr));
 }
 
 //-----------------------------------------------------------------------------
 void Image::save(std::string file) {
-	saveToBmp(&img, std::wstring(file.begin(), file.end()), true);
+	saveToPng(&img, std::wstring(file.begin(), file.end()), true);
+}
+
+//-----------------------------------------------------------------------------
+void Image::setViewPort(const space2& view) {
+	space2 standard = getStandardCrd2();
+	standard.i *= img.width();
+	standard.j *= img.height();
+	standard.pos.y += img.height();
+	standard.j.negate();
+
+	vec2 a(0.5, 0.5);
+
+	vec2 pos = standard.from(view.to(a));
+
+	screen_tr = invert(combine(invert(standard), view));
+
+	pos = screen_tr.from(a);
+
+	pos = space2(invert(screen_tr)).from(a);
+}
+
+//-----------------------------------------------------------------------------
+double Image::fromThick(double a) {
+	return screen_tr.fromDir(vec2(a, 0)).x;
 }

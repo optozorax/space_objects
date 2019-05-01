@@ -1,4 +1,5 @@
 #include <functional>
+#include <vector>
 
 #include <spob/spob.h>
 #include <twg/image/image_drawing.h>
@@ -8,6 +9,7 @@
 
 using namespace spob;
 using namespace twg;
+using namespace std;
 
 struct rect2 { vec2 a, b; };
 
@@ -17,7 +19,11 @@ Inter intersect(const rect2& rect, const line2& line,
 Inter intersect(const rect2& rect, const line2& line,
 			   vec2& a, vec2& b);
 
-double findBorder(const std::function<bool(double)>& f);
+vector<vec2> calcRegularPolygon(int n, vec2 center, double r, double fi);
+
+vector<vec2> placePolyOnEdge(const vector<vec2>& poly, int edge);
+
+vector<vec2> sumPolygons(const vector<vec2>& poly1, const vector<vec2>& poly2, int edge1, int edge2);
 
 //-----------------------------------------------------------------------------
 class Image
@@ -41,6 +47,10 @@ public:
 	void set_pen(double thick, Color clr);
 
 	void save(std::string file);
+
+	void setViewPort(const space2& view);
+
+	double fromThick(double a);
 
 	ImageDrawing_aa img;
 	rect2 rect;

@@ -48,7 +48,14 @@ namespace spob
 	vec2 projection(const vec2& a, const vec2& to);
 	double distance(const vec2& a, const vec2& b);
 	double getAngle(const vec2& center, const vec2& p); // Угол точки p относительно точки center
-	double getClockWiseDistance(double alpha, double beta); // Расстояние между углом alpha и beta по часовой стрелке
+
+	double normalizeAngle(double angle); // Помещает угол в промежуток [0, 2pi]
+	double getClockwiseDistance(double alpha, double beta); // Расстояние между углом alpha и beta по часовой стрелке
+	double getAntiClockwiseDistance(double alpha, double beta); // Расстояние между углом alpha и beta против часовой стрелки
+	double offsetClockwise(double angle, double offset);
+	double offsetAntiClockwise(double angle, double offset);
+	bool isLessClockwise(double alpha, double beta);
+	bool isLessAntiClockwise(double alpha, double beta);
 	double getRightAngle(const vec2& a, const vec2& b, const vec2& c); // По направлению кривой abc возвращает величину угла справа в точке b
 
 	//-------------------------------------------------------------------------
@@ -58,8 +65,8 @@ namespace spob
 	bool isAntiDirectional(const vec2& a, const vec2& b);
 
 	//-------------------------------------------------------------------------
-	vec2 cartesian2polar(const vec2& a);
-	vec2 polar2cartesian(const vec2& a);
+	vec2 cartesian2polar(const vec2& a); // (x, y) -> (alpha, r)
+	vec2 polar2cartesian(const vec2& a); // (alpha, r) -> (x, y)
 
 //=============================================================================
 //=============================================================================
@@ -228,13 +235,48 @@ inline double getAngle(const vec2& center, const vec2& p) {
 }
 
 //-----------------------------------------------------------------------------
-inline double getClockWiseDistance(double alpha, double beta) {
-	return std::fmod(2.0*_SPOB_PI + (alpha - beta), 2.0*_SPOB_PI);
+inline double normalizeAngle(double angle) {
+	angle = std::fmod(angle, 2.0*_SPOB_PI);
+	if (angle >= 0) {
+		return angle;
+	} else {
+		return 2.0*_SPOB_PI + angle;
+	}
+}
+
+//-----------------------------------------------------------------------------
+inline double getClockwiseDistance(double alpha, double beta) {
+	return normalizeAngle(alpha-beta);
+}
+
+//-----------------------------------------------------------------------------
+inline double getAntiClockwiseDistance(double alpha, double beta) {
+	return normalizeAngle(beta-alpha);
+}
+
+//-----------------------------------------------------------------------------
+inline double offsetClockwise(double angle, double offset) {
+	return angle - offset;
+}
+
+//-----------------------------------------------------------------------------
+inline double offsetAntiClockwise(double angle, double offset) {
+	return angle + offset;
+}
+
+//-----------------------------------------------------------------------------
+inline bool isLessClockwise(double alpha, double beta) {
+	return alpha > beta;
+}
+
+//-----------------------------------------------------------------------------
+inline bool isLessAntiClockwise(double alpha, double beta) {
+	return alpha < beta;
 }
 
 //-----------------------------------------------------------------------------
 inline double getRightAngle(const vec2& a, const vec2& b, const vec2& c) {
-	return getClockWiseDistance(getAngle(b, c), getAngle(b, a));
+	return getClockwiseDistance(getAngle(b, c), getAngle(b, a));
 }
 
 //-----------------------------------------------------------------------------
