@@ -88,6 +88,25 @@ vector<vec2> sumPolygons(const vector<vec2>& poly1, const vector<vec2>& poly2, i
 	return result;
 }
 
+//-----------------------------------------------------------------------------
+space2 calcViewPort(const vec2& min, const vec2& max) {
+	space2 result;
+	result.pos = min;
+	result.i = vec2(max.x-min.x, 0);
+	result.j = vec2(0, max.y-min.y);
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent) {
+	space2 result = viewport;
+	result.pos -= result.fromDir(vec2(percent, percent));
+	double minLen = std::min(result.i.length(), result.j.length());
+	result.i *= (result.i.length() + minLen * 2 * percent)/result.i.length();
+	result.j *= (result.j.length() + minLen * 2 * percent)/result.j.length();
+	return result;
+}
+
 //=============================================================================
 //=============================================================================
 //=============================================================================

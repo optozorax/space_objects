@@ -146,15 +146,23 @@ void slae_solver::process(const vec3c& vec) {
 	assert(vec.z.is_number());
 	process(vec.x);
 	process(vec.y);
-} // vec.z не учитывается!!!
+}
+
+//-----------------------------------------------------------------------------
+void slae_solver::process(const mat3c& mat) {
+	process(mat[0]);
+	process(mat[1]);
+	process(mat[2]);
+}
 
 //-----------------------------------------------------------------------------
 std::vector<double> slae_solver::solve(void) {
-	VectorXd x = A.colPivHouseholderQr().solve(b);
+	Eigen::JacobiSVD<MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	VectorXd x = svd.solve(b);
 	std::vector<double> result(size);
 	for (int j = 0; j < size; j++) result[j] = x(j);
 	double precision = (A*x-b).norm();
-	assert(precision/(2.0*size) < 0.01);
+	assert(precision/(2.0*size) < 0.1);
 	return result;
 }
 
@@ -247,3 +255,91 @@ vec3c polynom_spline2_crd_interpolation::unknown_value(double t, int d) const {
 
 	return result;
 }
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+polynom_spline2_crd_interpolation2::polynom_spline2_crd_interpolation2(int n) : n(n), coefs(6*n, 0) {}
+
+//-----------------------------------------------------------------------------
+glm::mat3 polynom_spline2_crd_interpolation2::value(double t, int d) const {
+	auto dcoefs = calcDCoefs(d);
+
+	glm::mat3 res(0);
+	res[2][2] = d == 0;
+	double tmul = 1;
+	for (int i = d; i < n; ++i) {
+		int pos = n-i-1;
+		res[0][0] += dcoefs[pos] * coefs[pos] * tmul;
+		res[0][1] += dcoefs[pos] * coefs[n + pos] * tmul;
+
+		res[1][0] += dcoefs[pos] * coefs[2*n + pos] * tmul;
+		res[1][1] += dcoefs[pos] * coefs[3*n + pos] * tmul;
+
+		res[2][0] += dcoefs[pos] * coefs[4*n + pos] * tmul;
+		res[2][1] += dcoefs[pos] * coefs[5*n + pos] * tmul;
+
+		tmul *= t;
+	}
+	return res;
+}
+
+//-----------------------------------------------------------------------------
+void polynom_spline2_crd_interpolation2::solve_coefs(const glm::mat3& p) {
+	auto pc = to_slae_line(p, 6*n);
+	auto at_zero_c = to_slae_line(glm::mat3(1), 6*n);
+
+	slae_solver solver(6*n);
+	solver.process(unknown_value(0) - at_zero_c);
+	solver.process(unknown_value(1) - pc*unknown_value(0));
+	for (int i = 1; i < n-1; ++i)
+		solver.process(unknown_value(1, i) - pc*unknown_value(0, i));
+
+	coefs = solver.solve();
+}
+
+//-----------------------------------------------------------------------------
+std::vector<double> polynom_spline2_crd_interpolation2::calcDCoefs(int d) const {
+	// Строим коэффициенты производной
+	std::vector<double> dcoefs(n+1, 1);
+	dcoefs.back() = 0;
+	for (int i = 0; i < d; ++i) {
+		double last = dcoefs.back();
+		for (int j = n; j > 0; --j) {
+			double temp = dcoefs[j-1];
+			int number = n+1-j;
+			dcoefs[j-1] = last * number;
+			last = temp;
+		}
+	}
+
+	return dcoefs;
+}
+
+//-----------------------------------------------------------------------------
+mat3c polynom_spline2_crd_interpolation2::unknown_value(double t, int d) const {
+	auto dcoefs = calcDCoefs(d);
+
+	// Считаем сам вектор с учетом производной
+	mat3c res = to_slae_line(glm::mat3(0), 6*n);
+	res[2][2].set(d == 0);
+	double tmul = 1;
+	for (int i = d; i < n; ++i) {
+		int pos = n-i-1;
+		res[0][0].set(pos, dcoefs[pos] * tmul);
+		res[0][1].set(n + pos, dcoefs[pos] * tmul);
+
+		res[1][0].set(2*n + pos, dcoefs[pos] * tmul);
+		res[1][1].set(3*n + pos, dcoefs[pos] * tmul);
+
+		res[2][0].set(4*n + pos, dcoefs[pos] * tmul);
+		res[2][1].set(5*n + pos, dcoefs[pos] * tmul);
+
+		tmul *= t;
+	}
+
+	return res;
+}
+

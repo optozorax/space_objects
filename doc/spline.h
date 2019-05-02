@@ -23,7 +23,7 @@ using Eigen::VectorXd;
 class slae_line
 {
 public:
-	slae_line(int size, double value = 0);
+	slae_line(int size = 0, double value = 0);
 
 	void set(double value); // Ставит значение в правую часть
 	void set(int i, double value); /// Ставит значение в строку СЛАУ
@@ -62,6 +62,7 @@ public:
 
 	void process(const slae_line& line);
 	void process(const vec3c& vec); // vec.z не учитывается!!!
+	void process(const mat3c& mat); // нижняя строка не учитывается
 
 	std::vector<double> solve(void);
 private:
@@ -84,8 +85,25 @@ public:
 	void solve_coefs(const glm::mat3& p, glm::vec3 at_zero); /// Найти такие коэффициенты полинома, чтобы в точке t=0 он был равен at_zero, а в t=1 был равен p*at_zero, при этом чтобы такое же равенство сохранилось для всех производных вплоть до n-1 порядка
 private:
 	std::vector<double> calcDCoefs(int d) const; /// Находит какие коэффициенты стоят перед каждым элементом полинома при взятии производной d-ой степени.
-	vec3c fvalue(double t) const; /// Возвращает значение полинома в виде строки СЛАУ, где записаны строки всех неизвестных.
 	vec3c unknown_value(double t, int d = 0) const; /// Возвращает значение полинома в точке t, в виде строки СЛАУ, то есть там записаны коэффициенты с учетом того, что они ещё неизвестны. Так же можно получить производную, задав d отличное от нуля.
+
+	int n;
+	std::vector<double> coefs;
+};
+
+//-----------------------------------------------------------------------------
+/** Класс сплайна на основе полиномов n степени для интерполяции двух систем координат. */
+class polynom_spline2_crd_interpolation2
+{
+public:
+	polynom_spline2_crd_interpolation2(int n);
+
+	glm::mat3 value(double t, int d = 0) const; /// Получить значение полинома в точке t. Так же если задана величина производной, можно получить значение производной степени d в этой точке.
+
+	void solve_coefs(const glm::mat3& p); /// Найти такие коэффициенты полинома, чтобы в точке t=0 он был равен at_zero, а в t=1 был равен p*at_zero, при этом чтобы такое же равенство сохранилось для всех производных вплоть до n-1 порядка
+private:
+	std::vector<double> calcDCoefs(int d) const; /// Находит какие коэффициенты стоят перед каждым элементом полинома при взятии производной d-ой степени.
+	mat3c unknown_value(double t, int d = 0) const; /// Возвращает значение полинома в точке t, в виде строки СЛАУ, то есть там записаны коэффициенты с учетом того, что они ещё неизвестны. Так же можно получить производную, задав d отличное от нуля.
 
 	int n;
 	std::vector<double> coefs;

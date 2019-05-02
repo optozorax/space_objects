@@ -25,6 +25,9 @@ vector<vec2> placePolyOnEdge(const vector<vec2>& poly, int edge);
 
 vector<vec2> sumPolygons(const vector<vec2>& poly1, const vector<vec2>& poly2, int edge1, int edge2);
 
+space2 calcViewPort(const vec2& min, const vec2& max);
+space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent);
+
 //-----------------------------------------------------------------------------
 class Image
 {

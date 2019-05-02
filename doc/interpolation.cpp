@@ -209,43 +209,67 @@ crd2 SplineInterpolator::interpolate(double pos) const {
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-glm::mat3 interpolate(const glm::mat3& P, double n) {
-	n = 1;
-	double a = P[0][0], b = P[1][0], c = P[2][0];
-	double d = P[0][0], x = P[1][0], y = P[2][0];
-	double z = std::sqrt(a*a-2*x*a+x*x+4*b*d);
-	double h = std::pow(a+x-z, n);
-	double g = std::pow(a+x+z, n);
-	double t = std::pow(2.0, 1-n);
-	double p = std::pow(2.0, 2+n);
-	double u = std::pow(2.0, n);
-	double k = std::pow(2.0, -n);
-	double j = std::pow(2.0, 2-n);
-	double i = std::pow(2.0, n+1);
+SplineInterpolator2::SplineInterpolator2(int n, const crd2& c1, const crd2& c2) : spline(n), start(c1), end(c2) {
+	glm::mat3 at_zero(1);
+	glm::mat3 p = getFromMatrix(space2(c1).to(c2));
+	spline.solve_coefs(p);
+}
 
-	glm::vec3 v1(
-		-(t*(a*h-x*h-z*h-a*g+x*g-z*g))/z,
-		-(j*(d*h-d*g))/z,
-		0
-	);
+//-----------------------------------------------------------------------------
+crd2 SplineInterpolator2::interpolate(double pos) const {
+	return start.from(getToCrd(spline.value(pos)));
+}
 
-	glm::vec3 v2(
-		-(k*(4*b*h-4*b*g))/z, 
-		(t*(a*h-x*h+z*h-a*g+x*g+z*g))/z, 
-		0
-	);
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-	glm::vec3 v3(
-		(2*c*x*x*h+2*a*c*h+4*b*c*d*h-2*a*c*x*h-2*c*x*h-2*a*b*y*h+4*b*y*h-2*b*x*y*h-2*b*z*y*h-2*c*z*h+2*c*x*z*h-2*c*x*x*g-2*a*c*g-4*b*c*d*g+2*a*c*x*g+2*c*x*g-2*c*z*g+2*c*x*z*g+2*a*b*g*y-4*b*g*y+2*b*x*g*y-2*b*z*g*y+p*b*z*y+p*c*z-p*c*x*z)/(-u*z*a+u*x*z*a+u*z-u*b*d*z-u*x*z), 
-		(2*(-a*c*d*h+2*c*d*h-c*d*x*h+a*a*y*h-a*y*h+2*b*d*y*h-a*x*y*h+x*y*h+a*z*y*h-z*y*h-c*d*z*h+a*c*d*g-2*c*d*g+c*d*x*g-c*d*z*g-a*a*g*y+a*g*y-2*b*d*g*y+a*x*g*y-x*g*y+a*z*g*y-z*g*y+i*z*y-i*a*z*y+i*c*d*z))/(-u*z*a+u*x*z*a+u*z-u*b*d*z-u*x*z), 
-		4
-	);
+//-----------------------------------------------------------------------------
+glm::mat3 pow(const glm::mat3& P, double n) {
+	using namespace Eigen;
 
-	glm::mat3 result(v1, v2, v3);
+	assert(n >= 0);
 
-	result /= 4;
+	glm::mat3 result(1);
+	for (int i = 0; i < int(n); i++)
+		result *= P;
+
+	n -= int(n);
+
+	while (n != 0) {
+		Matrix3d A;
+		A << 
+			P[0][0], P[0][1], P[0][2],
+			P[1][0], P[1][1], P[1][2],
+			P[2][0], P[2][1], P[2][2];
+		if (n > 0.5) {
+			A = A.pow(std::fmod(n, 0.5));
+			n -= fmod(n, 0.5); 
+		} else {
+			A = A.pow(n);
+			n = 0;
+		}
+
+		result *= glm::mat3(
+			A(0, 0), A(0, 1), A(0, 2), 
+			A(1, 0), A(1, 1), A(1, 2), 
+			A(2, 0), A(2, 1), A(2, 2));
+	}
 
 	return result;
+}
+
+//-----------------------------------------------------------------------------
+MatrixPowerInterpolator::MatrixPowerInterpolator(const crd2& c1, const crd2& c2) : start(c1) {
+	auto c3 = space2(c1).to(c2);
+	P = getFromMatrix(c3);
+}
+
+//-----------------------------------------------------------------------------
+crd2 MatrixPowerInterpolator::interpolate(double pos) const {
+	auto Pp = pow(P, pos);
+	auto c3 = getToCrd(Pp);
+	return start.from(c3);
 }
 
 }

@@ -1,6 +1,7 @@
 #define GLM_FORCE_XYZW_ONLY
 
 #include <iostream>
+#include <time.h>
 
 #include <spob/spob2glm.h>
 #include <Eigen/Dense>
@@ -14,342 +15,153 @@ using Eigen::VectorXd;
 #include "interpolation.h"
 //#include "mba.hpp"
 
-void draw_pythagoras_tree(const space2& space, function<void(const vector<vec2>&)> draw_poly, function<void(const vector<vec2>&)> draw_triangle, std::function<bool(vec2)> isTerminate, int depth = 0) {
-	// Выходим из рекурсии, если одна из осей (аналогично и сторона квадрата) имеет длину меньше, чем 2
-	if (depth > 20 || isTerminate(space.i))
-		return;
+typedef function<void(const std::vector<vec2>&)> DrawFunction;
+typedef function<bool(const vec2&, int)> TerminateFunction;
 
+int n = 5, m = 2;
+
+void empty_draw(const std::vector<vec2>& poly) {}
+
+//-----------------------------------------------------------------------------
+std::pair<space2, space2> getFractalSpaces(space2 space, DrawFunction draw_poly = empty_draw, DrawFunction draw_triangle = empty_draw) {
 	// Задаем координаты квадрата
-	vector<vec2> p = placePolyOnEdge(calcRegularPolygon(5, vec2(0), 1, 0), 0);
+	vector<vec2> p = placePolyOnEdge(calcRegularPolygon(n, vec2(0), 1, 0), 0);
 
 	// Высчитываем координаты прямоугольного треугольника, который лежит своей гипотенузой на оси X, с углом alpha при основании
-	double alpha = spob::deg2rad(45);
+	double alpha = spob::deg2rad(18);
 	vec2 tr_a(0, 0), tr_b(1, 0), tr_c(cos(alpha), 0);
 	tr_c = rotate(tr_c, vec2(0), alpha);
 
-	// Преобразуем квадрат из текущих координат к координатам переданного пространства
-	p = fromMas(space, p);
-
 	// Рисуем квадрат
-	draw_poly(p);
-	/*draw_line(a, b);
-	draw_line(b, c);
-	draw_line(c, d);
-	draw_line(d, a);*/
-	
+	draw_poly(fromMas(space, p));
+
 	// Строим пространство, которое находится на верхней стороне квадрата
-	space2 tr_line;
-	if (depth == 0)
-		tr_line = makeLine2(p[4], p[3]);
-	else
-		tr_line = makeLine2(p[3], p[2]);
+	space2 tr_line = makeLine2(p[m+1], p[m]);
 
 	// Переводим координаты треугольника к этому пространству
 	tr_a = tr_line.from(tr_a);
 	tr_b = tr_line.from(tr_b);
 	tr_c = tr_line.from(tr_c);
 
-	draw_triangle({tr_a, tr_b, tr_c});
+	draw_triangle(fromMas(space, std::vector<vec2>{tr_a, tr_b, tr_c}));
 
 	// Строим пространства, которые находятся на обоих катетах этого треугольника
 	space2 l1 = makeLine2(tr_a, tr_c);
 	space2 l2 = makeLine2(tr_c, tr_b);
 
+	//l1.j *= 0.8;
+	//l2.j *= 0.8;
+
+	return {l1, l2};
+}
+
+//-----------------------------------------------------------------------------
+void draw_pythagoras_tree(space2 space, DrawFunction draw_poly, DrawFunction draw_triangle, TerminateFunction isTerminate, int depth = 0) {
+	// Выходим из рекурсии, если одна из осей (аналогично и сторона квадрата) имеет длину меньше, чем 2
+	if (isTerminate(space.i, depth))
+		return;
+
+	auto sp = getFractalSpaces(space, draw_poly, draw_triangle);
+
 	// Рекурсивно строим дерево в этих пространствах
-	draw_pythagoras_tree(l1, draw_poly, draw_triangle, isTerminate, depth+1);
-	draw_pythagoras_tree(l2, draw_poly, draw_triangle, isTerminate, depth+1);
+	draw_pythagoras_tree(space.from(sp.first), draw_poly, draw_triangle, isTerminate, depth+1);
+	draw_pythagoras_tree(space.from(sp.second), draw_poly, draw_triangle, isTerminate, depth+1);
 }
 
-/*inline crd2 interpolateSpline(const spline2& spline, const space2& a, const space2& b, double pos, int type = 0) {
-	crd2 result;
-	double alpha = getAngle(vec2(0), a.i);
-	double beta = getAngle(vec2(0), b.i);
-
-	if (type == 0) type = (getClockwiseDistance(alpha, beta) < _SPOB_PI) + 1;
-
-	auto calc_angle = [&] (double pos) -> double {
-		auto cpos = spline.value(pos);
-		vec2 cpos1(cpos.x, cpos.y);
-		auto dpos = spline.value(pos, 1);
-		auto dnew = rotate(vec2(dpos.x, dpos.y), cpos1, -90);
-		return getAngle(cpos1, dnew);
-	};
-
-	auto calc_mx = [&] (double pos) -> double {
-		auto dpos = spline.value(pos, 1);
-		dpos.z = 0;
-		return spob::vec2(dpos.x, dpos.y).length();
-	};
-
-	double startAngle = calc_angle(1);
-	double currentAngle = calc_angle(1-pos);
-	double endAngle = calc_angle(0);
-	double anglePos = getClockwiseDistance(startAngle, currentAngle)/getClockwiseDistance(startAngle, endAngle);
-
-	double startMx = calc_mx(1);
-	double currentMx = calc_mx(1-pos);
-	double endMx = calc_mx(0);
-	double mxPos = (startMx/currentMx);
-
-	spob::space2 start;
-	glm::vec3 vpos = spline.value(1);
-	start.pos = vec2(vpos.x, vpos.y);
-	glm::vec3 dpos = spline.value(1, 1);
-	start.i = vec2(dpos.x, dpos.y)/startMx * a.i.length();
-	start.j = rotate(start.i, vec2(0), spob::deg2rad(90));
-
-	spob::space2 current;
-	vpos = spline.value(1-pos);
-	current.pos = vec2(vpos.x, vpos.y);
-	dpos = spline.value(1-pos, 1);
-	current.i = vec2(dpos.x, dpos.y)/startMx * a.i.length();
-	current.j = rotate(current.i, vec2(0), spob::deg2rad(90));
-
-	double an1 = getSlopeAngle(a);
-	double an2 = getSlopeAngle(start);
-	double an3 = getClockwiseDistance(an1, an2);
-	current = rotate(current, current.pos, an3);
-
-	return current;
-}*/
-
-ostream& operator<<(ostream& out, const spob::vec2& v) {
-	out << "(" << v.x << ", " << v.y << ")";
-	return out;
-}
-
-ostream& operator<<(ostream& out, const glm::vec3& v) {
-	out << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-	return out;
-}
-
-vec2 getPos(const VectorXd& coefs, double t) {
-	return vec2(coefs[0]*t*t + coefs[1]*t + coefs[2], coefs[3]*t*t + coefs[4]*t + coefs[5]);
-}
-
-VectorXd mul(const VectorXd& coefs, glm::mat3 m) {
-	vec2 i(m[0][0], m[0][1]);
-	vec2 j(m[1][0], m[1][1]);
-	vec2 p(m[2][0], m[2][1]);
-	VectorXd res(6);
-	res[0] = coefs[0]*i.x + coefs[3]*j.x;
-	res[1] = coefs[1]*i.x + coefs[4]*j.x;
-	res[2] = coefs[2]*i.x + coefs[5]*j.x + p.x;
-
-	res[3] = coefs[0]*i.y + coefs[3]*j.y;
-	res[4] = coefs[1]*i.y + coefs[4]*j.y;
-	res[5] = coefs[2]*i.y + coefs[5]*j.y + p.y;
-
-	return res;
-}
-
-VectorXd findCoefs(glm::mat3 m) {
-	vec2 i(m[0][0], m[0][1]);
-	vec2 j(m[1][0], m[1][1]);
-	vec2 p(m[2][0], m[2][1]);
-	MatrixXd A(6, 6);
-	A << 
-		1, 1, 1-i.x, 0, 0, -j.x,
-		0, 0, -i.y, 1, 1, 1-j.y,
-		//1, 1, 1, 0, 0, 0,
-		//0, 0, 0, 1, 1, 1,
-		2, 1-i.x, 0, 0, -j.x, 0, 
-		0, -i.y, 0, 2, 1-j.y, 0,
-		0, 0, 1, 0, 0, 0,
-		0, 0, 0, 0, 0, 1;
-		//1-i.x, 0, 0, -j.x, 0, 0,
-		//-i.y, 0, 0, 1-j.y, 0, 0;
-	//cout << A << endl;
-	VectorXd b(6);
-	b << p.x, p.y, p.x, p.y, 0, 0;
-	//cout << b << endl;
-	VectorXd x = A.fullPivLu().solve(b);
-	//cout << x << endl;
-
-	cout << m * glm::vec3(0, 0, 1) << endl;
-	cout << getPos(x, 0) << endl;
-	cout << getPos(x, 1) << endl;
-
-	//auto newX = mul(x, m);
-	//cout << getPos(newX, 0) << endl;
-	//cout << getPos(newX, 1) << endl;
-
-	//cout << endl << newX << endl;
-
-	return x;
+//-----------------------------------------------------------------------------
+std::pair<vec2, vec2> calcBoundingBox(void) {
+	bool isInitialized = false;
+	vec2 min, max;
+	draw_pythagoras_tree(getStandardCrd2(), [&] (const vector<vec2>& poly) {
+		if (!isInitialized) {
+			isInitialized = true;
+			min = poly[0];
+			max = poly[1];
+		}
+		for (auto& i : poly) {
+			if (i.x < min.x) min.x = i.x;
+			if (i.y < min.y) min.y = i.y;
+			if (i.x > max.x) max.x = i.x;
+			if (i.y > max.y) max.y = i.y;
+		}
+	}, [&] (const vector<vec2>& poly) {}, [&] (vec2 i, int depth) -> bool {
+		return depth > 500 || i.length() < 0.05;
+	});
+	return {min, max};
 }
 
 //-----------------------------------------------------------------------------
 void draw_logo(void) {
-	/*// Coordinates of data points.
-	std::vector<double> coo = {0.0, 0.0, 1.0};
-
-	// Data values.
-	std::vector<double> val = {0.2, 0.0, 0.0, -0.2, -1.0, 1.0};
-
-	// Bounding box containing the data points.
-	mba::point<2> lo = {-0.1, -0.1};
-	mba::point<2> hi = { 1.1,  1.1};
-
-	// Initial grid size.
-	mba::index<2> grid = {3, 3};
-
-	// Algorithm setup.
-	mba::MBA<2> interp(lo, hi, grid, coo, val);
-
-	// Get interpolated value at arbitrary location.
-	double w = interp(mba::point<2>{0.3, 0.7});*/
-
-
-	ImageGif gif;
-	ImageGif gif2;
-
-	vec2 size(500, 500 * 1.25);
-	vec2 size2(750, 500);
-
 	crd2 standard = getStandardCrd2();
-	/*space2 screen = standard;
-	screen = rotate(screen, vec2(0, 0), spob::deg2rad(0));
-	screen.pos = size / 2.0 + vec2(0.5, 0.5);
-	screen.i *= 80;
-	screen.j *= 80;
-	screen.j.negate();
-
-	screen.pos = screen.from(vec2(4.5, -1.6));*/
-
-	crd2 screen = standard;
-	screen.pos = vec2(-5, -3);
-	double mx = 10;
-	screen.i *= mx * 1.5;
-	screen.j *= mx;
-
-
-	//-------------------------------------------------------------------------
-	Image img(size, screen);
-	Image img2(size2, screen);
-	Image imgStatic(size2, screen);
-
-	img.setViewPort(screen);
-	img2.setViewPort(screen);
-	imgStatic.setViewPort(screen);
-
-	/*imgStatic.thick = 0.01;
-	space2 standard_copy = standard;
-	standard_copy.move({-0.2, -0.2});
-	standard_copy.i *= 2;
-	standard_copy.j *= 2;
-	imgStatic.setViewPort(standard_copy);
-	imgStatic.set_pen(1.5/80.0, setAlpha(Gray, 192));
-	imgStatic.draw_grid(standard);
-	imgStatic.set_pen(1/80.0, Black);
-	imgStatic.draw_crd(standard);
-	imgStatic.save("test.png");
-	system("test.png");*/
-
 	vector<vec2> square = placePolyOnEdge(calcRegularPolygon(4, vec2(0), 1, 0), 0);
 
-	double alpha = spob::deg2rad(45);
-	vector<vec2> sq = placePolyOnEdge(calcRegularPolygon(5, vec2(0), 1, 0), 0);
+	//-------------------------------------------------------------------------
+	// Считаем ограничивающий прямоугольник у фрактала и систему координат, которрая будет идеально смотреть на фрактал вместе с границами
+	auto bbox = calcBoundingBox();
+	auto viewport = calcViewPort(bbox.first, bbox.second);
+	viewport = increaseViewportBorderByMinAxis(viewport, 0.1);
+	double coef = viewport.i.length() / viewport.j.length();
 
-	imgStatic.draw_polygon(sq);
-	vector<vec2> tr = {vec2(0, 0), vec2(1, 0), rotate(vec2(cos(alpha), 0), vec2(0), -alpha)};
+	vec2 size(1000, 1000 / coef);
 
-	auto poly = sumPolygons(sq, tr, 2, 0);
+	//-------------------------------------------------------------------------
+	// Инициализируем все изображения
+	ImageGif gif;
+	ImageGif gif2;
+	Image img(size, viewport);
+	Image img2(size, viewport);
 
-	imgStatic.draw_polygon(poly);
+	img.setViewPort(viewport);
+	img2.setViewPort(viewport);
 
-	space2 line = makeLine2(poly[4], poly[3]);
-	poly = toMas(line, poly);
-	imgStatic.draw_polygon(poly);
+	string t = std::to_string(time(0));
+	gif.start(img.img.size(), "g_" + t + ".gif");
+	gif2.start(img2.img.size(), "g_" + t + "_explanation.gif");
 
-	cout << "line.to({0, 0}): " << line.to({0, 0}) << endl;
-	cout << "line.from({0, 0}): " << line.from({0, 0}) << endl;
+	//-------------------------------------------------------------------------
+	// Инициализируем системы координат и интерполяцию
+	auto sp = getFractalSpaces(standard);
+	//auto space = sp.second, another = sp.first;
+	auto space = sp.first, another = sp.second;
 
-	auto P = getFromMatrix(line);
-	//spline2 spline(8);
-	//spline.solve_coefs(P, {0, 0, 1});
-	//auto coefs = findCoefs(P);
+	auto start = space.from(space.from(space.from(space)));
+	auto end = space.from(start);
+	MatrixPowerInterpolator interpolator(start, end);
+	//SplineInterpolator2 interpolator(5, start, end);
 
-	SplineInterpolator interpolator(8, standard, line);
-
-	cout << spob::rad2deg(getSlopeAngle(line)) << endl;
-	vec2 offset = cartesian2polar(getOffset(line));
-	cout.precision(16);
-	cout << offset.x << " " << offset.y << endl;
-	offset = cartesian2polar(line.to(vec2(0, 0)));
-	cout << offset.x << " " << offset.y << endl;
-
-	poly = toMas(line, poly);
-	imgStatic.draw_polygon(poly);
-
-	gif.start(img.img.size(), "interpolation.gif");
-	gif2.start(img2.img.size(), "interpolation2.gif");
-
-	//for (int angle = 0; angle < 360; angle += 5) {
-	int angle = 45; {
-	/*crd2 a = rotate(standard, vec2(0, 0), spob::deg2rad(angle));
-	a.move(vec2(-5, 2));
-	a.i *= 3;
-	a.j *= 3;*/
-	crd2 a = line;
-
-	// Сетка и координаты
-	//imgStatic.img.clear(White);
-	imgStatic.set_pen(1.5/80.0, setAlpha(Gray, 192));
-	imgStatic.draw_grid(standard);
-	imgStatic.set_pen(1/80.0, Black);
-	imgStatic.draw_crd(standard);
-	imgStatic.draw_crd(a);
-	imgStatic.set_pen(2.5/80.0, Gray);
-
-	imgStatic.draw_polygon(poly);
-	imgStatic.draw_polygon(fromMas(line, poly));
-
+	//-------------------------------------------------------------------------
+	// Основной цикл рисования
 	double count = 60;
 	for (int i = 0; i < count; ++i) {
+	//int i = 0; {
 		cout << i << endl;
-
 		double pos = i/count;
+
+		// Сетка и координаты на изображении-объяснении
+		img.img.clear(White);
+		img.set_pen(0.5/80.0, Black);
+		img2.img.clear(White);
+		img2.set_pen(1.5/80.0, setAlpha(Gray, 192));
+		img2.draw_grid(standard);
+		img2.draw_crd(standard);
+		img2.set_pen(1/80.0, Black);
 
 		// Интерполированная система координат
 		space2 c = interpolator.interpolate(pos);
-		//space2 c = interpolateSpline(spline, a, standard, pos, 1);
-		//space2 c = interpolateCircular(a, standard, pos, 12.45, 1, true);
-		//crd2 c = interpolate(a, standard, pos);
-
-		/*double viewPortScale = 2;
-		space2 d = c;
-		d.pos += c.fromDir({-viewPortScale , -viewPortScale });
-		d.i *= 1 + viewPortScale * 2;
-		d.j *= 1 + viewPortScale * 2;*/
-		double xoffset = 3;
-		space2 d = c;
-		d.pos += c.fromDir({-2 , -3});
-		d.i *= 1 + 2 * xoffset;
-		d.j *= (1 + 2 * xoffset) * 1.25;
+		space2 d = c.from(viewport);
 		img.setViewPort(d);
 
-		// Сетка и координаты
-		img.img.clear(White);
-		//img.set_pen(1.5/80.0, setAlpha(Gray, 192));
-		//img.draw_grid(standard);
-		//img.set_pen(1/80.0, Black);
-		//img.draw_crd(standard);
-		//img.draw_crd(a);
-		//img.draw_crd(c);
-		//img.set_pen(2.5/80.0, Gray);
-		img.set_pen(0.5/80.0, Black);
-
-		double max_len = 170;
-		double start_min_len = 10;
-		double min_len = 5.1;
+		// Сам процесс рисования фрактала
+		double max_len = img.screen_tr.fromDir(vec2(0, 1)).length();
+		double min_len = 0.1;
+		double start_min_len = min_len + 3;
 
 		auto draw = [&] (const vector<vec2>& poly) {
 			double len = distance(img.screen_tr.from(poly[1]), img.screen_tr.from(poly[0]));
-			double pos = (len-min_len)/(max_len-min_len);
+			double pos = std::min((len-min_len)/(max_len-min_len), 1.0);
 
 			double alphapos = 1;
-			if (len < start_min_len) alphapos = (len - min_len)/(start_min_len-min_len); 
+			if (len < start_min_len) alphapos = std::min((len - min_len)/(start_min_len-min_len), 1.0); 
 
 			Color clr = setAlpha(getColorBetween(sqrt(sqrt(pos)), Red, Miku), 
 								 //sqrt(sqrt(alphapos)) 
@@ -372,49 +184,42 @@ void draw_logo(void) {
 			}
 		};
 
-		img2.img.clear(White);
-		img2.set_pen(1.5/80.0, setAlpha(Gray, 192));
-		img2.draw_grid(standard);
-		img2.set_pen(1/80.0, Black);
-
 		#ifndef _DEBUG
-		draw_pythagoras_tree(makeLine2(poly.back(), poly.front()), draw, draw, [&] (vec2 i) -> bool {
-			return img.screen_tr.fromDir(i).length() < min_len;
+		draw_pythagoras_tree(standard, draw, draw, [&] (vec2 i, int depth) -> bool {
+			return depth > 100 || img.screen_tr.fromDir(i).length() < min_len;
 		});
 		#endif
 
-		img2.draw_crd(standard);
-		img2.draw_crd(a);
+		// Рисуем все текущие системы координат
+		img2.draw_crd(start);
+		img2.draw_crd(end);
 		img2.draw_crd(c);
 
+		// Рисуем viewport
 		img2.set_pen(2.5/80.0, Gray);
 		img2.draw_polygon(fromMas(d, square));
 
 		img2.set_pen(0.5/80.0, Gray);
 
-		imgStatic.draw_crd(c);
-
-		/*auto splinecopy = spline;
-		for (int i = 0; i < 10; i++) {
-			img2.set_pen(2/80.0, getColorBetween(i/10.0, Bitcoin, Green));
-			double countLine = 20;
-			for (int j = 0; j < countLine; j++) {
-				auto p1 = splinecopy.value(j/countLine);
-				auto p2 = splinecopy.value((j+1)/countLine);
-				img2.draw_line(vec2(p1.x, p1.y), vec2(p2.x, p2.y));
+		space2 startcopy = standard;
+		double countSplines = 20;
+		for (int i = 0; i < countSplines; i++) {
+			img2.set_pen(2/80.0, getColorBetween(i/countSplines, Bitcoin, Green));
+			double countLines = 10;
+			for (int j = 0; j < countLines; j++) {
+				auto p1 = interpolator.interpolate(j/countLines);
+				auto p2 = interpolator.interpolate((j+1)/countLines);
+				img2.draw_line(startcopy.from(p1.pos), startcopy.from(p2.pos));
 			}
-			splinecopy.mul(P);
-		}*/
+			startcopy = space2(end).from(space2(start).to(startcopy));
+		}
 
 		gif.process(img.img, 2);
 		gif2.process(img2.img, 2);
 	}
-	//gif.process(imgStatic.img, 16);
-	}
+
 	gif.end();
 	gif2.end();
-
-	imgStatic.save("interpolation.png");
 }
 
 //-----------------------------------------------------------------------------
