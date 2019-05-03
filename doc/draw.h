@@ -1,5 +1,6 @@
 #include <functional>
 #include <vector>
+#include <memory>
 
 #include <spob/spob.h>
 #include <twg/image/image_drawing.h>
@@ -32,32 +33,38 @@ space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent);
 class Image
 {
 public:
-	Image(const vec2& size, const space2& screen_tr);
+	Image(const vec2& size, const space2& screen_tr, int layers = 1);
 
-	void draw_line(const vec2& a, const vec2& b);
-	void draw_dashed_line(const vec2& a, const vec2& b, double size, double space);
-	void draw_inf_line(const line2& line);
-	void draw_arrow(const vec2& a, const vec2& b, double angle, double size);
-	void draw_crd(const crd2& crd);
-	void draw_line2(const line2& line);
-	void draw_grid(const space2& space);
-	void draw_polygon(const std::vector<vec2>& polygon);
-	void draw_circle(const vec2& pos, double r, Color clr);
+	void draw_line(const vec2& a, const vec2& b, int layer = 0);
+	void draw_dashed_line(const vec2& a, const vec2& b, double size, double space, int layer = 0);
+	void draw_inf_line(const line2& line, int layer = 0);
+	void draw_arrow(const vec2& a, const vec2& b, double angle, double size, int layer = 0);
+	void draw_crd(const crd2& crd, int layer = 0);
+	void draw_line2(const line2& line, int layer = 0);
+	void draw_grid(const space2& space, int layer = 0);
+	void draw_polygon(const std::vector<vec2>& polygon, int layer = 0);
+	void draw_circle(const vec2& pos, double r, Color clr, int layer = 0);
 
-	void draw_project(const vec2& pos, const line2& line);
-	void draw_intersect(const line2& l1, const line2& l2);
+	void draw_project(const vec2& pos, const line2& line, int layer = 0);
+	void draw_intersect(const line2& l1, const line2& l2, int layer = 0);
 
-	void set_pen(double thick, Color clr);
+	void set_pen(double thick, Color clr, int layer = 0);
 
-	void save(std::string file);
+	void set_alpha(int alpha);
 
 	void setViewPort(const space2& view);
 
+	void clear(Color clr);
+
+	void combine_layers(void);
+	void save(std::string file);
+
 	double fromThick(double a);
 
-	ImageDrawing_aa img;
+	std::vector<shared_ptr<ImageDrawing_aa>> imgs;
 	rect2 rect;
 	double thick;
+	int alpha;
 	Color clr;
 	space2 screen_tr;
 };

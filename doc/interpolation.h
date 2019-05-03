@@ -68,6 +68,25 @@ namespace spob
 	};
 
 	//-------------------------------------------------------------------------
+	/** Интерполирует многочлен, который должен выполнять роль схожую с базисным полиномом Лагранжа, но только иметь равную производную вначале и в конце отрезка. 
+
+	То есть если даны упорядоченные точки: x1, x2, x3, x4 и x2 задана как точка, где полином должен равняться единицы. В остальных точках он должен равняться нулю, так же некоторые его производные в точках x1 и x4 должны быть равны. */
+	class SplineInterpolator3
+	{
+	public:
+		SplineInterpolator3(std::vector<double> points, int basePoint, int dCount);
+
+		double interpolate(double pos) const;
+	private:
+		slae_line unknown_value(double t, int d) const;
+		std::vector<double> calcDCoefs(int d) const;
+
+		std::vector<double> coefs;
+		int n;
+	};
+
+
+	//-------------------------------------------------------------------------
 	/** Возводит матрицу в произвольную вещественную степень. */ 
 	glm::mat3 pow(const glm::mat3& p, double n);
 

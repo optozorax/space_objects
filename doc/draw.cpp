@@ -100,10 +100,12 @@ space2 calcViewPort(const vec2& min, const vec2& max) {
 //-----------------------------------------------------------------------------
 space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent) {
 	space2 result = viewport;
-	result.pos -= result.fromDir(vec2(percent, percent));
 	double minLen = std::min(result.i.length(), result.j.length());
-	result.i *= (result.i.length() + minLen * 2 * percent)/result.i.length();
-	result.j *= (result.j.length() + minLen * 2 * percent)/result.j.length();
+	double muli = (result.i.length() + minLen * 2 * percent)/result.i.length();
+	double mulj = (result.j.length() + minLen * 2 * percent)/result.j.length();
+	result.pos -= result.fromDir(vec2((muli-1)/2.0, (mulj-1)/2.0));
+	result.i *= muli;
+	result.j *= mulj;
 	return result;
 }
 
@@ -111,21 +113,24 @@ space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent) {
 //=============================================================================
 //=============================================================================
 
-Image::Image(const vec2& size, const space2& screen_tr) : img(size), screen_tr(screen_tr) {
-	img.clear(White);
+Image::Image(const vec2& size, const space2& screen_tr, int layers) : screen_tr(screen_tr), alpha(255) {
+	for (int i = 0; i < layers; i++)
+		imgs.push_back(make_shared<ImageDrawing_aa>(size));
+	for (auto& img : imgs)
+		img->clear(Transparent);
 	rect.a = vec2(0, 0);
 	rect.b = size;
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_line(const vec2& a1, const vec2& b1) {
+void Image::draw_line(const vec2& a1, const vec2& b1, int layer) {
 	vec2 a = screen_tr.from(a1);
 	vec2 b = screen_tr.from(b1);
-	img.drawLine(a, b);
+	imgs[layer]->drawLine(a, b);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_dashed_line(const vec2& a, const vec2& b, double size, double space) {
+void Image::draw_dashed_line(const vec2& a, const vec2& b, double size, double space, int layer) {
 	line2 line = makeLine2(a, b);
 	line.orthonormalize();
 	double length = distance(a, b), i = 0;
@@ -133,29 +138,29 @@ void Image::draw_dashed_line(const vec2& a, const vec2& b, double size, double s
 	while (i < length) {
 		if (i + size > length)
 			i = length - size;
-		draw_line(last, line.from(i + size));
+		draw_line(last, line.from(i + size), layer);
 		last = line.from(i + size + space);
 		i += size + space;
 	}
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_crd(const crd2& crd) {
+void Image::draw_crd(const crd2& crd, int layer) {
 	Color current_clr = clr;
 	double arrow_size = std::max(crd.i.length(), crd.j.length()) * 0.1;
 	double arrow_angle = spob::deg2rad(30);
-	set_pen(thick, Red);
-	draw_arrow(crd.pos, crd.pos + crd.i, arrow_angle, arrow_size);
-	set_pen(thick, Blue);
-	draw_arrow(crd.pos, crd.pos + crd.j, arrow_angle, arrow_size);
-	set_pen(thick, Black);
-	draw_circle(crd.pos, thick, Black);
-	set_pen(thick, current_clr);
+	set_pen(thick, Red, layer);
+	draw_arrow(crd.pos, crd.pos + crd.i, arrow_angle, arrow_size, layer);
+	set_pen(thick, Blue, layer);
+	draw_arrow(crd.pos, crd.pos + crd.j, arrow_angle, arrow_size, layer);
+	set_pen(thick, Black, layer);
+	draw_circle(crd.pos, thick, Black, layer);
+	set_pen(thick, current_clr, layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_arrow(const vec2& a, const vec2& b, double angle, double size) {
-	draw_line(a, b);
+void Image::draw_arrow(const vec2& a, const vec2& b, double angle, double size, int layer) {
+	draw_line(a, b, layer);
 
 	line2 line = makeLine2(b, a);
 
@@ -168,30 +173,30 @@ void Image::draw_arrow(const vec2& a, const vec2& b, double angle, double size) 
 	second = rotate(second, vec2(0), -angle);
 
 	space2 space_of_line(line);
-	draw_line(b, space_of_line.from(first));
-	draw_line(b, space_of_line.from(second));
+	draw_line(b, space_of_line.from(first), layer);
+	draw_line(b, space_of_line.from(second), layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_inf_line(const line2& line) {
+void Image::draw_inf_line(const line2& line, int layer) {
 	vec2 a, b;
 	if (intersect(rect, screen_tr.from(line), a, b))
-		draw_line(screen_tr.to(a), screen_tr.to(b));
+		draw_line(screen_tr.to(a), screen_tr.to(b), layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_line2(const line2& line) {
+void Image::draw_line2(const line2& line, int layer) {
 	double current_thick = thick;
 	Color current_clr = clr;
 	double arrow_size = std::max(line.i.length(), line.j.length()) * 0.1;
 	double arrow_angle = spob::deg2rad(30);
 
-	set_pen(current_thick/1.5, setAlpha(Gray, 128));
-	draw_inf_line(line);
+	set_pen(current_thick/1.5, setAlpha(Gray, 128), layer);
+	draw_inf_line(line, layer);
 
 	Color clr = setLightness(Gray,  getLightness(Gray) / 1.1);
 	
-	set_pen(current_thick / 2.0, clr);
+	set_pen(current_thick / 2.0, clr, layer);
 	double t1, t2;
 	if (intersect(rect, line, t1, t2) == INTER_OVERLAPS) {
 		for (int i = t1; i < t2; i++) {
@@ -200,16 +205,16 @@ void Image::draw_line2(const line2& line) {
 		}
 	}
 
-	set_pen(current_thick, Green);
-	draw_arrow(line.pos, line.from(1), arrow_angle, arrow_size);
+	set_pen(current_thick, Green, layer);
+	draw_arrow(line.pos, line.from(1), arrow_angle, arrow_size, layer);
 
-	draw_circle(line.pos, thick, Black);
+	draw_circle(line.pos, thick, Black, layer);
 
-	set_pen(current_thick, current_clr);
+	set_pen(current_thick, current_clr, layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_grid(const space2& space) {
+void Image::draw_grid(const space2& space, int layer) {
 	double current_thick = thick;
 	Color current_clr = clr;
 
@@ -229,14 +234,14 @@ void Image::draw_grid(const space2& space) {
 		double dist = space2(l).to(screenCenter).y;
 
 		double coef = 2;
-		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
+		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef), layer);
 		auto draw_line = [&] (double offset) {
 			if (offset == 0) {
-				set_pen(current_thick, current_clr);
-				draw_inf_line(offset_l(l, offset));
-				set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
+				set_pen(current_thick, current_clr, layer);
+				draw_inf_line(offset_l(l, offset), layer);
+				set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef), layer);
 			} else {
-				draw_inf_line(offset_l(l, offset));
+				draw_inf_line(offset_l(l, offset), layer);
 			}
 		};
 
@@ -258,7 +263,7 @@ void Image::draw_grid(const space2& space) {
 		}
 
 		coef = 2.0 * coef;
-		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef));
+		set_pen(current_thick / coef, setAlpha(current_clr, getAlpha(current_clr) / coef), layer);
 
 		if (is_line_border(l, int(dist * 5)/5.0))
 			draw_line(int(dist * 5)/5.0);
@@ -281,57 +286,76 @@ void Image::draw_grid(const space2& space) {
 	draw_one_dim_grid(space);
 	draw_one_dim_grid(space2(space.j, space.i, space.pos));
 
-	set_pen(current_thick, current_clr);
+	set_pen(current_thick, current_clr, layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_polygon(const std::vector<vec2>& polygon) {
+void Image::draw_polygon(const std::vector<vec2>& polygon, int layer) {
 	for (int i = 0; i < polygon.size()-1; ++i)
-		draw_line(polygon[i], polygon[i+1]);
-	draw_line(polygon.back(), polygon.front());
+		draw_line(polygon[i], polygon[i+1], layer);
+	draw_line(polygon.back(), polygon.front(), layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_circle(const vec2& pos1, double r1, Color clr) {
+void Image::draw_circle(const vec2& pos1, double r1, Color clr, int layer) {
 	vec2 pos = screen_tr.from(pos1);
 	double r = screen_tr.fromDir(vec2(r1, 0)).x;
-	img.setBrush(clr);
-	img.drawPolygon(computeEllipse(vec2(r)).move(pos));
+	imgs[layer]->setBrush(setAlpha(clr, alpha));
+	imgs[layer]->drawPolygon(computeEllipse(vec2(r)).move(pos));
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_project(const vec2& pos, const line2& line) {
-	draw_circle(pos, thick * 2.0, clr);
-	draw_dashed_line(pos, line.project(pos), 10/80.0, 3/80.0);
-	draw_circle(line.project(pos), thick, clr);
+void Image::draw_project(const vec2& pos, const line2& line, int layer) {
+	draw_circle(pos, thick * 2.0, clr, layer);
+	draw_dashed_line(pos, line.project(pos), 10/80.0, 3/80.0, layer);
+	draw_circle(line.project(pos), thick, clr, layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::draw_intersect(const line2& l1, const line2& l2) {
+void Image::draw_intersect(const line2& l1, const line2& l2, int layer) {
 	vec2 common;
 	intersect(l1, l2, common);
-	draw_circle(common, thick * 2, Red);
+	draw_circle(common, thick * 2, Red, layer);
 }
 
 //-----------------------------------------------------------------------------
-void Image::set_pen(double thick1_, Color clr1) {
+void Image::set_pen(double thick1_, Color clr1, int layer) {
 	thick = thick1_;
 	double thick1 = fromThick(thick1_);
 	clr = clr1;
-	img.setPen(Pen(thick1, clr));
+	imgs[layer]->setPen(Pen(thick1, setAlpha(clr1, alpha)));
+}
+
+//-----------------------------------------------------------------------------
+void Image::set_alpha(int _alpha) {
+	alpha = _alpha;
+	set_pen(thick, clr);
 }
 
 //-----------------------------------------------------------------------------
 void Image::save(std::string file) {
-	saveToPng(&img, std::wstring(file.begin(), file.end()), true);
+	saveToPng(&(*imgs[0]), std::wstring(file.begin(), file.end()), true);
+}
+
+//-----------------------------------------------------------------------------
+void Image::clear(Color clr) {
+	for (auto& i : imgs)
+		i->clear(Transparent);
+	imgs[0]->clear(clr);
+}
+
+//-----------------------------------------------------------------------------
+void Image::combine_layers(void) {
+	for (int i = 1; i < imgs.size(); i++)
+		imgs[i]->drawTo(&(*imgs[0]), Point_i(0, 0), Point_i(0, 0), imgs[0]->size(), imgs[0]->size());
 }
 
 //-----------------------------------------------------------------------------
 void Image::setViewPort(const space2& view) {
 	space2 standard = getStandardCrd2();
-	standard.i *= img.width();
-	standard.j *= img.height();
-	standard.pos.y += img.height();
+	standard.i *= imgs[0]->width();
+	standard.j *= imgs[0]->height();
+	standard.pos.y += imgs[0]->height();
 	standard.j.negate();
 
 	vec2 a(0.5, 0.5);

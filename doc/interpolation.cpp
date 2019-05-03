@@ -1,5 +1,6 @@
 #include <iostream>
 #include "interpolation.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <spob/spob2glm.h>
 
@@ -217,6 +218,10 @@ SplineInterpolator2::SplineInterpolator2(int n, const crd2& c1, const crd2& c2) 
 
 //-----------------------------------------------------------------------------
 crd2 SplineInterpolator2::interpolate(double pos) const {
+	/*glm::mat3 p1 = getFromMatrix(start);
+	glm::mat3 p2 = getFromMatrix(start);
+	glm::mat3 pt = pow(p2 * glm::inverse(p1), pos) * p1;
+	return getToCrd(pt);*/
 	return start.from(getToCrd(spline.value(pos)));
 }
 
@@ -225,10 +230,81 @@ crd2 SplineInterpolator2::interpolate(double pos) const {
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-glm::mat3 pow(const glm::mat3& P, double n) {
+SplineInterpolator3::SplineInterpolator3(std::vector<double> points, int basePoint, int dCount) : n(points.size() + dCount), coefs(points.size() + dCount) {
+	slae_solver solver(n);
+
+	slae_line one(n, 0);
+	one.set(1);
+
+	for (int i = 0; i < points.size(); ++i)
+		if (i == basePoint)
+			solver.process(unknown_value(points[i], 0) - one);
+		else
+			solver.process(unknown_value(points[i], 0));
+
+	for (int i = 1; i <= dCount; ++i)
+		solver.process(unknown_value(points.front(), i) - unknown_value(points.back(), i));
+
+	coefs = solver.solve();
+}
+
+//-----------------------------------------------------------------------------
+double SplineInterpolator3::interpolate(double t) const {
+	double res = 0;
+	double tmul = 1;
+	for (int i = 0; i < n; ++i) {
+		res += coefs[n-i-1] * tmul;
+		tmul *= t;
+	}
+	return res;
+}
+
+//-----------------------------------------------------------------------------
+slae_line SplineInterpolator3::unknown_value(double t, int d) const {
+	auto dcoefs = calcDCoefs(d);
+	
+	slae_line result(n, 0);
+	double tmul = 1;
+	for (int i = d; i < n; ++i) {
+		int pos = n-i-1;
+		result.set(pos, dcoefs[pos] * tmul);
+		tmul *= t;
+	}
+
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+std::vector<double> SplineInterpolator3::calcDCoefs(int d) const {
+	// Строим коэффициенты производной
+	std::vector<double> dcoefs(n+1, 1);
+	dcoefs.back() = 0;
+	for (int i = 0; i < d; ++i) {
+		double last = dcoefs.back();
+		for (int j = n; j > 0; --j) {
+			double temp = dcoefs[j-1];
+			int number = n+1-j;
+			dcoefs[j-1] = last * number;
+			last = temp;
+		}
+	}
+
+	return dcoefs;
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+glm::mat3 pow(const glm::mat3& P1, double n) {
+	glm::mat3 P = P1;
 	using namespace Eigen;
 
-	assert(n >= 0);
+	if (n < 0) {
+		P = glm::inverse(P);
+		n = -n;
+	}
 
 	glm::mat3 result(1);
 	for (int i = 0; i < int(n); i++)
@@ -242,7 +318,7 @@ glm::mat3 pow(const glm::mat3& P, double n) {
 			P[0][0], P[0][1], P[0][2],
 			P[1][0], P[1][1], P[1][2],
 			P[2][0], P[2][1], P[2][2];
-		if (n > 0.5) {
+		if (std::fabs(n) > 0.5) {
 			A = A.pow(std::fmod(n, 0.5));
 			n -= fmod(n, 0.5); 
 		} else {

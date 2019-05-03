@@ -20,6 +20,12 @@ namespace spob
 	glm::mat4 getFromMatrix(const crd3& crd);
 	glm::mat4 getToMatrix(const crd3& crd);
 
+	crd2 getToCrd(const glm::mat3& m);
+	crd2 getFromCrd(const glm::mat3& m);
+
+	crd3 getToCrd(const glm::mat4& m);
+	crd3 getFromCrd(const glm::mat4& m);
+
 	glm::vec2 spob2glm(const vec2& a);
 	glm::vec3 spob2glm(const vec3& a);
 
@@ -57,6 +63,26 @@ inline glm::mat4 getFromMatrix(const crd3& crd) {
 //-----------------------------------------------------------------------------
 inline glm::mat4 getToMatrix(const crd3& crd) {
 	return glm::inverse(getFromMatrix(crd));
+}
+
+//-----------------------------------------------------------------------------
+inline crd2 getToCrd(const glm::mat3& m) {
+	return crd2(vec2(m[0][0], m[0][1]), vec2(m[1][0], m[1][1]), vec2(m[2][0], m[2][1]));
+}
+
+//-----------------------------------------------------------------------------
+inline crd2 getFromCrd(const glm::mat3& m) {
+	return getToCrd(glm::inverse(m));
+}
+
+//-----------------------------------------------------------------------------
+inline crd3 getToCrd(const glm::mat4& m) {
+	return {};
+}
+
+//-----------------------------------------------------------------------------
+inline crd3 getFromCrd(const glm::mat4& m) {
+	return {};
 }
 
 //-----------------------------------------------------------------------------
