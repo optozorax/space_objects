@@ -439,3 +439,43 @@ int main() {
 Ортогональная проекция:
 
 ![doc/3D_cube_orthogonal.png](doc/3D_cube_orthogonal.png)
+
+# Компиляция
+
+Предположим, у нас есть некоторый файл `test.cpp`, со следующим содержанием:
+
+```c++
+#include <spob/spob.h>
+
+int main() {
+	using namespace spob;
+	vec2 a(1, 2);
+	vec2 b(0, 1);
+	auto c = a + b;
+}
+```
+
+Тогда для его компиляции можно использовать `CMakeLists.txt` файл:
+
+```CMake
+cmake_minimum_required(VERSION 3.10.2)
+
+#-----------------------------------------------------------------------------
+# Код включения библиотеки, можно копировать в другие проекты
+
+# Установите здесь ваш путь до библиотеки
+set(SPACE_OBJECTS_DIR ~/my/space_objects)
+
+add_library(space_objects STATIC 
+	${SPACE_OBJECTS_DIR}/src/coordinates2.cpp 
+	${SPACE_OBJECTS_DIR}/src/coordinates3.cpp
+)
+include_directories(${SPACE_OBJECTS_DIR}/include)
+link_libraries(space_objects)
+#-----------------------------------------------------------------------------
+
+project(test)
+add_executable(main test.cpp)
+```
+
+Код для компиляции
