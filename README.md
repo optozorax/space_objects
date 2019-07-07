@@ -477,5 +477,3 @@ link_libraries(space_objects)
 project(test)
 add_executable(main test.cpp)
 ```
-
-Код для компиляции
