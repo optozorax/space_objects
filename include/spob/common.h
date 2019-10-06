@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cmath>
 
 namespace spob {
 
@@ -19,6 +20,8 @@ namespace spob {
 	//-------------------------------------------------------------------------
 	inline double deg2rad(double a) { return a / 180.0 * _SPOB_PI; }
 	inline double rad2deg(double r) { return r * 180.0 / _SPOB_PI; }
+
+	inline double distance(const double& a, const double& b) { return std::fabs(a-b); }
 
 	//-------------------------------------------------------------------------
 	template<class A, class B>

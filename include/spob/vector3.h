@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-#include <exception>
+#include <stdexcept>
 
 #include <spob/common.h>
 
@@ -130,7 +130,7 @@ inline vec3& vec3::operator*=(const double& a) {
 inline vec3& vec3::operator/=(const double& a) {
 	#ifdef _DEBUG
 	if (a == 0)
-		throw std::exception("Divide by zero");
+		throw std::logic_error("Divide by zero");
 	#endif
 	x /= a;
 	y /= a;
@@ -162,7 +162,7 @@ inline vec3 operator*(const vec3& a, const double& k) {
 inline vec3 operator/(const vec3& a, const double& k) {
 	#ifdef _DEBUG
 	if (k == 0)
-		throw std::exception("Divide by zero");
+		throw std::logic_error("Divide by zero");
 	#endif
 	return vec3(a.x / k, a.y / k, a.z / k);
 }
@@ -176,7 +176,7 @@ inline vec3 operator*(const double& k, const vec3& a) {
 inline vec3 operator/(const double& k, const vec3& a) {
 	#ifdef _DEBUG
 	if (a.x == 0 || a.y == 0 || a.z == 0)
-		throw std::exception("Divide by zero");
+		throw std::logic_error("Divide by zero");
 	#endif
 	return vec3(k / a.x, k / a.y, k / a.z);
 }
@@ -199,7 +199,7 @@ inline double cosine(const vec3& a, const vec3& b) {
 	if (aLen != 0 && bLen != 0) 
 		return dot(a, b) / (aLen * bLen);
 	else
-		throw std::exception("Calc cosine of vector with 0 length.");
+		throw std::logic_error("Calc cosine of vector with 0 length.");
 	#else
 	if (aLen != 0 && bLen != 0) 
 		return dot(a, b) / (aLen * bLen);
@@ -212,7 +212,7 @@ inline double cosine(const vec3& a, const vec3& b) {
 inline double project(const vec3& a, const vec3& to) {
 	#ifdef _DEBUG
 	if (to.length() == 0)
-		throw std::exception("Projection to null vector");
+		throw std::logic_error("Projection to null vector");
 	#endif
 	return dot(a, to) / dot(to, to);
 }

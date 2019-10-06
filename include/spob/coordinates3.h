@@ -130,6 +130,8 @@ namespace spob
 	bool isParallel(const line3& line, const vec3& d);
 	bool isSkew(const line3& a, const line3& b);
 
+	bool isSame(const crd3& a, const crd3& b);
+
 	//-------------------------------------------------------------------------
 	// Distance between objects
 	// If objects intersect, then distance = 0
@@ -435,7 +437,7 @@ inline bool isContain(const plane3& plane, const line3& line) {
 
 //-----------------------------------------------------------------------------
 inline bool isContain(const plane3& plane, const vec3& o) {
-	return isParallel(plane, plane.pos - o) || isNear(plane.pos, o);
+	return isNear(plane.pos, o) || isParallel(plane, plane.pos - o);
 }
 
 //-----------------------------------------------------------------------------
@@ -445,7 +447,7 @@ inline bool isContain(const line3& a, const line3& b) {
 
 //-----------------------------------------------------------------------------
 inline bool isContain(const line3& line, const vec3& o) {
-	return isCollinear(line.i, line.pos - o) || isNear(line.pos, o);
+	return isNear(line.pos, o) || isCollinear(line.i, line.pos - o);
 }
 
 //-----------------------------------------------------------------------------
@@ -476,6 +478,15 @@ inline bool isParallel(const line3& line, const vec3& d) {
 //-----------------------------------------------------------------------------
 inline bool isSkew(const line3& a, const line3& b) {
 	return !isIntersect(a, b) && !isParallel(a, b);
+}
+
+//-----------------------------------------------------------------------------
+inline bool isSame(const crd3& a, const crd3& b) {
+	return
+		isNear(a.i, b.i) &&
+		isNear(a.j, b.j) &&
+		isNear(a.k, b.k) &&
+		isNear(a.pos, b.pos);
 }
 
 };
