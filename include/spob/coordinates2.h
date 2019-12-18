@@ -314,4 +314,12 @@ inline bool isParallel(const line2& line, const vec2& d) {
 	return isCollinear(line.i, d);
 }
 
+//-----------------------------------------------------------------------------
+inline bool isSame(const crd2& a, const crd2& b) {
+	return
+		isNear(a.i, b.i) &&
+		isNear(a.j, b.j) &&
+		isNear(a.pos, b.pos);
+}
+
 };

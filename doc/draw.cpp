@@ -109,6 +109,21 @@ space2 increaseViewportBorderByMinAxis(const space2& viewport, double percent) {
 	return result;
 }
 
+//-----------------------------------------------------------------------------
+std::pair<crd2, vec2> calcViewPortAndSize(vec2 min, vec2 max, int maxSize) {
+	auto viewport = calcViewPort(min, max);
+	double coef = viewport.i.length() / viewport.j.length();
+
+	vec2 size;
+	if (coef > 1)
+		size = vec2(maxSize, maxSize / coef);
+	else
+		size = vec2(maxSize * coef, maxSize);
+
+	return { viewport, size };
+}
+
+
 //=============================================================================
 //=============================================================================
 //=============================================================================
@@ -334,7 +349,7 @@ void Image::set_alpha(int _alpha) {
 
 //-----------------------------------------------------------------------------
 void Image::save(std::string file) {
-	saveToPng(&(*imgs[0]), std::wstring(file.begin(), file.end()), true);
+	saveToPng(&(*imgs[0]), file, true);
 }
 
 //-----------------------------------------------------------------------------
