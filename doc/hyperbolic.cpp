@@ -34,7 +34,7 @@ struct complex_matrix22 {
 	complex<double> a, b, c, d;
 } to_circle_m = { 1, -1i, 1, 1i };
 
-complex_matrix22 to_circle_end = { 1, -1i, 1, 1i };
+complex_matrix22 to_circle_end = { 1i, 1, 1, 1i };
 
 vec2 to_circle(const vec2& pos) {
 	auto z = to(pos);
@@ -106,7 +106,7 @@ public:
 	void draw(Image& image) const {
 		auto draw_line = [&](const vec2& a, const vec2& b) {
 			double count = 10;
-			image.set_pen(0.007, Blue);
+			image.set_pen(0.01, Blue);
 			if (fabs(a.x - b.x) < 0.0001) {
 				vec2 last = a;
 				for (int i = 0; i <= count; i++) {
@@ -157,7 +157,7 @@ public:
 };
 
 int main() {
-	auto [viewport, size] = calcViewPortAndSize(vec2(-5, -1.1), vec2(5, 5), 1000);
+	auto [viewport, size] = calcViewPortAndSize(vec2(-3, -1.1), vec2(3, 3), 1000);
 	Image image(size, getStandardCrd2());
 	image.setViewPort(viewport);
 
@@ -176,26 +176,21 @@ int main() {
 		image.draw_grid(getStandardCrd2(), 0);
 
 		cout << i << endl;
-		complex_matrix22 ec = { 1, 0, 0, 1 };
 		double t = i / count;
 
 		bool maxSleep = false;
-		int maxAlpha = 128;
 		if (t > 1) {
-			image.alpha = (t - 1) / overpercent * maxAlpha;
-			//image.draw_circle(vec2(0, 0), 1.03, Black);
-			maxSleep = image.alpha == maxAlpha;
+			maxSleep = (t - 1) == overpercent;
 		}
 		if (t < 0) {
-			image.alpha = (-t) / overpercent * maxAlpha;
-			//image.draw_polyfill({ vec2(-100, 0), vec2(-100, 100), vec2(100, 100), vec2(100, 0) }, Black);
-			maxSleep = image.alpha == maxAlpha;
+			maxSleep = (-t) == overpercent;
 		}
-		image.alpha = 255;
 
 		if (t < 0) t = 0;
 		if (t > 1) t = 1;
 		t = sin((t-0.5) * _SPOB_PI)/2 + 0.5;
+
+		complex_matrix22 ec = { 1i, 0, 0, 1i };
 		to_circle_m.a = ec.a + (to_circle_end.a - ec.a) * t;
 		to_circle_m.b = ec.b + (to_circle_end.b - ec.b) * t;
 		to_circle_m.c = ec.c + (to_circle_end.c - ec.c) * t;
