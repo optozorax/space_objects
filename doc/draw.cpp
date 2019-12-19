@@ -141,7 +141,16 @@ Image::Image(const vec2& size, const space2& screen_tr, int layers) : screen_tr(
 void Image::draw_line(const vec2& a1, const vec2& b1, int layer) {
 	vec2 a = screen_tr.from(a1);
 	vec2 b = screen_tr.from(b1);
-	imgs[layer]->drawLine(a, b);
+	line2 l = makeLine2(a, b);
+	vec2 start, end;
+	if (intersect(rect, l, start, end)) {
+		double t1 = l.to(start);
+		double t2 = l.to(end);
+		t1 = min(max(0.0, t1), 1.0);
+		t2 = min(max(0.0, t2), 1.0);
+		if (fabs(t1 - t2) > 0.0001)
+			imgs[layer]->drawLine(l.from(t1), l.from(t2));
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -309,6 +318,15 @@ void Image::draw_polygon(const std::vector<vec2>& polygon, int layer) {
 	for (int i = 0; i < polygon.size()-1; ++i)
 		draw_line(polygon[i], polygon[i+1], layer);
 	draw_line(polygon.back(), polygon.front(), layer);
+}
+
+//-----------------------------------------------------------------------------
+void Image::draw_polyfill(const std::vector<vec2>& polygon, Color clr, int layer) {
+	Polygon_d poly;
+	for (auto& i : polygon)
+		poly.array.push_back(screen_tr.from(i));
+	imgs[layer]->setBrush(setAlpha(clr, alpha));
+	imgs[layer]->drawPolygon(poly);
 }
 
 //-----------------------------------------------------------------------------

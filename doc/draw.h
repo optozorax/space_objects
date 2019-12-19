@@ -45,6 +45,7 @@ public:
 	void draw_line2(const line2& line, int layer = 0);
 	void draw_grid(const space2& space, int layer = 0);
 	void draw_polygon(const std::vector<vec2>& polygon, int layer = 0);
+	void draw_polyfill(const std::vector<vec2>& polygon, Color clr, int layer = 0);
 	void draw_circle(const vec2& pos, double r, Color clr, int layer = 0);
 
 	void draw_project(const vec2& pos, const line2& line, int layer = 0);
